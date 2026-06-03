@@ -69,6 +69,16 @@ Be concise, accurate, and grounded in the available information.`;
       memoryK
     );
 
+    // Step 2b: Also fetch documents by sigil (identity anchor)
+    if (identity_anchor) {
+      const sigilMemories = await this.memoryService.searchByMetadata({ sigil: identity_anchor });
+      for (const doc of sigilMemories) {
+        if (!relevantMemories.some(m => m.doc.id === doc.id)) {
+          relevantMemories.push({ doc, score: 1.0 }); // Full score for direct sigil match
+        }
+      }
+    }
+
     // Step 3: Build prompt with context
     const { systemPrompt, fullPrompt } = this.buildPrompt(
       identity_anchor,
@@ -87,7 +97,7 @@ Be concise, accurate, and grounded in the available information.`;
         { role: "system", content: systemPrompt },
         ...relevantMemories.map((m) => ({
           role: "assistant",
-          content: `[Memory: ${m.doc.id}] ${m.doc.content.substring(0, 200)}...`,
+          content: `[Memory: ${m.doc.id}] ${(m.doc.content || (m.doc as any).note || "").substring(0, 200)}...`,
         })),
         ...messages,
       ],
@@ -174,7 +184,7 @@ Relevant Context from Memory:
 ${relevantMemories
   .map(
     (m, i) =>
-      `${i + 1}. [${m.doc.id} - Score: ${m.score.toFixed(2)}]\n${m.doc.content}`
+      `${i + 1}. [${m.doc.id} - Score: ${m.score.toFixed(2)}]\n${m.doc.content || (m.doc as any).note || JSON.stringify(m.doc)}`
   )
   .join("\n\n")}`;
 

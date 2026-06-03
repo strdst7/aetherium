@@ -101,7 +101,8 @@ export class ReflectiveService {
     for (const memory of context.relevantMemories) {
       if (memory.score > 0.7) {
         // High-identity threshold
-        const facts = this.extractFacts(memory.doc.content);
+        const content = memory.doc.content || (memory.doc as any).note || "";
+        const facts = this.extractFacts(content);
 
         for (const fact of facts) {
           if (this.contradicts(candidate, fact)) {

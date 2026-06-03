@@ -128,7 +128,7 @@ export class ReasonController {
       const topMemories = orchestratorResponse.context.relevantMemories.slice(0, 3).map((m) => ({
         id: m.doc.id || m.doc._id || "unknown",
         score: m.score,
-        excerpt: m.doc.content.substring(0, 150),
+        excerpt: (m.doc.content || (m.doc as any).note || "").substring(0, 150),
       }));
 
       const response: ReasonResponse = {
