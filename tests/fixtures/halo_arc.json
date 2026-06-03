@@ -1,0 +1,53 @@
+[
+  {
+    "id": "mem_halo_001",
+    "content": "The Halo Array is a superweapon built by the Forerunners to contain and destroy all sentient life in the galaxy. It was designed to prevent the spread of the Flood parasite by eliminating all potential hosts.",
+    "metadata": {
+      "arc": "halo",
+      "type": "weapon",
+      "threat_level": "critical",
+      "known_locations": ["Installation 04", "Installation 05", "Installation 00"]
+    }
+  },
+  {
+    "id": "mem_halo_002",
+    "content": "The Flood is a parasitic species capable of assimilating other organisms and gaining their knowledge and abilities. It poses an existential threat to all galactic civilizations.",
+    "metadata": {
+      "arc": "halo",
+      "type": "threat",
+      "threat_level": "critical",
+      "characteristics": ["adaptive", "intelligent", "spreads rapidly"]
+    }
+  },
+  {
+    "id": "mem_halo_003",
+    "content": "Master Chief John-117 is humanity's greatest soldier and the last SPARTAN-II warrior. He has saved humanity multiple times by preventing Halo activation and containing Flood threats.",
+    "metadata": {
+      "arc": "halo",
+      "type": "ally",
+      "faction": "UNSC",
+      "status": "active"
+    }
+  },
+  {
+    "id": "mem_halo_004",
+    "content": "The Arbiter is a Sangheili warrior who allied with humanity against the Flood and the Halo rings. He represents a new era of cooperation between species.",
+    "metadata": {
+      "arc": "halo",
+      "type": "ally",
+      "faction": "Covenant",
+      "status": "active",
+      "reliability": "high"
+    }
+  },
+  {
+    "id": "mem_halo_005",
+    "content": "Installation 04 (Delta Halo) is a Halo ring located in the Threshold region. It was activated by the Flood but was subsequently shut down by Master Chief and the Arbiter.",
+    "metadata": {
+      "arc": "halo",
+      "type": "location",
+      "installation": "04",
+      "status": "deactivated"
+    }
+  }
+]

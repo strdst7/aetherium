@@ -24,23 +24,23 @@ services:
     ports:
       - "6379:6379"
 
-  api:
-    build: ./api
-    env_file: .env.local
-    ports:
-      - "8080:8080"
-    depends_on:
-      - mongo
-      - minio
-      - redis
+  # api:
+  #   build: ../api
+  #   env_file: .env.local
+  #   ports:
+  #     - "8080:8080"
+  #   depends_on:
+  #     - mongo
+  #     - minio
+  #     - redis
 
-  web:
-    build: ./web
-    env_file: .env.local
-    ports:
-      - "3000:3000"
-    depends_on:
-      - api
+  # web:
+  #   build: ../web
+  #   env_file: .env.local
+  #   ports:
+  #     - "3000:3000"
+  #   depends_on:
+  #     - api
 
 volumes:
   minio-data:
