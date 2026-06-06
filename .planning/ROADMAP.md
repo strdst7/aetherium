@@ -113,7 +113,14 @@ Plans:
   3. `mythify(identity_id, raw_output)` rewrites raw LLM output to match the identity's registered tone and voice
   4. A default "neutral" identity is used when no identity is specified, preserving backward compatibility
   5. Symbolic anchors (sigils, archetypes, ratios) from `design/sigil/v1.json` are loaded and bound to generated schemas
-**Plans**: TBD
+**Plans**: 5 plans in 3 waves
+
+Plans:
+- [ ] 06-01-PLAN.md — Mythic Schema & Types (ToneModel, VoiceModel, SymbolicAnchor, DEFAULT_NEUTRAL_MYTHIC)
+- [ ] 06-02-PLAN.md — Symbolic Anchor Loader (design/sigil/v1.json parser + constraint extraction)
+- [ ] 06-03-PLAN.md — Mythic Module Service (schema generation, mythify, generateMythicPrompt, neutral fallback)
+- [ ] 06-04-PLAN.md — Orchestrator Integration (mythic prompt injection, AgentBuilder + MultiAgentOrchestrator wiring)
+- [ ] 06-05-PLAN.md — Bootstrap, OpenAPI & Integration Tests (DI registration, API spec updates, end-to-end pipeline test)
 
 ### Phase 7: Sovereign Halo
 **Goal**: Every output is validated against identity law before delivery; failures trigger safe regeneration or structured error reporting  
@@ -185,7 +192,7 @@ Plans:
 | 3. Agent Interface & Contracts | 0/4 | Planned | - |
 | 4. Identity Registration & Persistence | 4/4 | Planned | - |
 | 5. Identity-Bound Reasoning | 0/7 | Not started | - |
-| 6. Mythic Module | 0/6 | Not started | - |
+| 6. Mythic Module | 5/5 | Planned | - |
 | 7. Sovereign Halo | 0/6 | Not started | - |
 | 8. Audit & Immutability | 0/5 | Not started | - |
 | 9. Web UI Extensions | 0/7 | Not started | - |
