@@ -203,7 +203,7 @@ Plans:
 - [x] 10-02-PLAN.md — Full Pipeline Integration Test (register → generate → audit end-to-end)
 - [x] 10-03-PLAN.md — Identity Consistency & Backward Compatibility (deterministic outputs, API compat, leakage tests)
 - [x] 10-04-PLAN.md — Real Provider E2E Tests (Gemini/Vertex AI with skip guards)
-- [ ] 10-05-PLAN.md — Web E2E & Final Integration (health checks, web API tests, CI pipeline)
+- [x] 10-05-PLAN.md — Web E2E & Final Integration (health checks, web API tests, CI pipeline)
 
 **Wave dependency notes:**
 - **Wave 1** — 10-01, 10-02 (no blockers; infrastructure + full pipeline test)
@@ -242,7 +242,7 @@ Plans:
 | 7. Sovereign Halo | 6/6 | Complete | 2026-06-06 |
 | 8. Audit & Immutability | 4/4 | Complete | 2026-06-06 |
 | 9. Web UI Extensions | 7/7 | Complete | 2026-06-06 |
-| 10. End-to-End Integration & Testing | 4/5 | In Progress | 2026-06-06 |
+| 10. End-to-End Integration & Testing | 5/5 | Complete | 2026-06-06 |
 | 11. Performance Hardening & Documentation | 0/5 | Not started | - |
 
 ---

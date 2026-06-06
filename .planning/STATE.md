@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-06-06T10:57:10.700Z"
+last_updated: "2026-06-06T11:27:37.000Z"
 progress:
   total_phases: 11
   completed_phases: 5
@@ -44,23 +44,24 @@ progress:
 | Field | Value |
 |-------|-------|
 | Phase | 10 |
-| Plan | 04 |
+| Plan | 05 |
 | Status | Complete |
 
 **Progress:**
 
 ```
-[██████████░░░░░░░░░░] 85% (9/11 phases planned, 10/11)
+[██████████░░░░░░░░░░] 91% (10/11 phases complete, 10/11)
 ```
 
 **Current Focus:**
 
-- Phase 10 in progress — End-to-End Integration & Testing
+- Phase 10 complete — End-to-End Integration & Testing
 - Plan 01 complete (Test Infrastructure & Fixtures)
 - Plan 02 complete (Full Pipeline Integration Test)
 - Plan 03 complete (Identity Consistency & Backward Compatibility)
 - Plan 04 complete (Real Provider E2E Tests)
-- Next action: Execute Phase 10 Plan 05 (Web E2E & Final Integration)
+- Plan 05 complete (Web E2E & Final Integration)
+- Next action: Plan Phase 11 (Performance Hardening & Documentation)
 
 ---
 
@@ -155,6 +156,9 @@ progress:
 | 2026-06-06 | MCP server for MongoDB as primary tool | Partner integration requirement; database is the real-world data source |
 | 2026-06-06 | TestDatabase refuses non-test MongoDB URIs | Mitigates T-10-01 threat; prevents accidental production DB drops during tests |
 | 2026-06-06 | MockProviderFactory implements actual AIProvider interface | Ensures compatibility with brownfield codebase GenerateRequest/GenerateResponse signatures |
+| 2026-06-06 | Fixed unawaited healthCheck Promise in health.ts | Accessing .ok on a Promise always returned undefined, causing false degraded status |
+| 2026-06-06 | Added X-API-Version header to web api-client | Version negotiation contract from Phase 3 requires version headers on all requests |
+| 2026-06-06 | Use npx jest directly for test:e2e script | Overrides jest.config.js testPathIgnorePatterns to allow E2E test execution on demand |
 
 ### TODOs
 
@@ -179,7 +183,7 @@ progress:
 - [x] Plan Phase 9 (Web UI Extensions)
 - [x] Execute Phase 9 (Web UI Extensions)
 - [x] Plan Phase 10 (End-to-End Integration & Testing)
-- [ ] Execute Phase 10 (End-to-End Integration & Testing)
+- [x] Execute Phase 10 (End-to-End Integration & Testing)
 
 ### Phase 8 Summary
 
@@ -225,6 +229,14 @@ progress:
   - `real-provider.e2e.test.ts` with 4 E2E tests (direct generation, full pipeline, identity shaping, failover) plus 3 guard utility tests
   - Updated `jest.config.js` to ignore `*.e2e.test.ts` by default
   - Tests skip gracefully when credentials missing; attempt execution with fake key (proving guard works)
+- **Plan 05 — Web E2E & Final Integration:** Complete
+  - `health.integration.test.ts` with 5 tests: all healthy, LLM degraded, DB degraded, timestamp format, missing services
+  - Fixed unawaited `healthCheck` Promise bug in `api/src/routes/health.ts`
+  - `web/src/tests/e2e/api-integration.test.ts` with 4 tests: getIdentities, submitReasonRequest, error handling, API version headers
+  - Added `X-API-Version: 1.0.0` header to `web/src/lib/api-client.ts`
+  - `web/src/tests/e2e/identity-flow.test.tsx` with 3 tests: form rendering, success flow, validation errors
+  - `.github/workflows/ci.yml` with parallel `api-tests` and `web-tests` jobs
+  - Root `package.json` with `test:api`, `test:web`, `test:all`, `test:e2e` scripts
 
 ### Blockers
 
@@ -238,7 +250,7 @@ _None._
 |-------|-------|
 | Last command | `/gsd-execute-phase 10` |
 | Context window health | Healthy |
-| Files changed this session | `api/src/tests/helpers/env-checker.ts`, `api/src/tests/helpers/real-provider-guard.ts`, `api/src/tests/real-provider.e2e.test.ts`, `api/.env.test.example`, `api/jest.config.js`, `.planning/phases/10-end-to-end-integration/10-04-SUMMARY.md`, `.planning/STATE.md`, `.planning/ROADMAP.md` |
+| Files changed this session | `api/src/tests/health.integration.test.ts`, `api/src/routes/health.ts`, `web/src/tests/e2e/api-integration.test.ts`, `web/src/tests/e2e/identity-flow.test.tsx`, `web/src/lib/api-client.ts`, `.github/workflows/ci.yml`, `package.json`, `api/package.json`, `web/package.json`, `.planning/phases/10-end-to-end-integration/10-05-SUMMARY.md`, `.planning/STATE.md`, `.planning/ROADMAP.md` |
 
 ---
 *State initialized: 2026-06-06*
