@@ -8,8 +8,8 @@ progress:
   total_phases: 11
   completed_phases: 10
   total_plans: 51
-  completed_plans: 34
-  percent: 91
+  completed_plans: 35
+  percent: 93
 ---
 
 # STATE: Aetherium
@@ -44,24 +44,25 @@ progress:
 | Field | Value |
 |-------|-------|
 | Phase | 11 |
-| Plan | 01 |
-| Status | In Progress (1/5 plans complete, Wave 1) |
+| Plan | 04 |
+| Status | In Progress (2/5 plans complete, Wave 1) |
 
 **Progress:**
 
 ```
-[███████████░░░░░░░░░] 91% (10/11 phases complete, 10/11)
+[███████████░░░░░░░░░] 93% (10/11 phases complete, 10/11)
 ```
 
 **Current Focus:**
 
 - Phase 11 in progress — Performance Hardening & Documentation
 - Plan 01 complete: Performance Benchmarking Infrastructure
+- Plan 04 complete: API Documentation & Examples
 - 341 tests passing across API (321) and Web (20)
 - Identity binding latency: ≤108ms (measured)
 - Cross-identity memory leakage: 0 (verified)
 - Audit record immutability: 100% (verified)
-- Next action: Execute Plan 02 (Latency Validation Tests)
+- Next action: Execute Plan 02 (Latency Validation Tests) or Plan 03 (Concurrency & Load Safety Tests)
 
 ---
 
@@ -160,6 +161,8 @@ progress:
 | 2026-06-06 | Fixed unawaited healthCheck Promise in health.ts | Accessing .ok on a Promise always returned undefined, causing false degraded status |
 | 2026-06-06 | Added X-API-Version header to web api-client | Version negotiation contract from Phase 3 requires version headers on all requests |
 | 2026-06-06 | Use npx jest directly for test:e2e script | Overrides jest.config.js testPathIgnorePatterns to allow E2E test execution on demand |
+| 2026-06-06 | OpenAPI examples must match actual schema field names | Plan showed aspirational examples (text, top-level mode) that conflicted with existing schemas (output, options.mode) |
+| 2026-06-06 | Add missing public endpoints to OpenAPI spec | /audit, /v1/memory/upsert, and /v1/multi-agent/reason were missing from spec despite being listed as public endpoints |
 
 ### TODOs
 
@@ -260,7 +263,7 @@ _None._
 |-------|-------|
 | Last command | `/gsd-execute-phase 11` |
 | Context window health | Healthy |
-| Files changed this session | `api/src/tests/helpers/benchmark.ts`, `api/src/tests/fixtures/performance-fixtures.ts`, `.planning/phases/11-performance-hardening/11-01-SUMMARY.md`, `.planning/STATE.md`, `.planning/ROADMAP.md` |
+| Files changed this session | `api/openapi.yml`, `docs/API_INTEGRATION.md`, `.planning/phases/11-performance-hardening/11-04-SUMMARY.md`, `.planning/STATE.md`, `.planning/ROADMAP.md` |
 
 ---
 *State initialized: 2026-06-06*
