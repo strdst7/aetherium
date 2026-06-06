@@ -49,6 +49,10 @@ export class SovereignHaloService {
     this.options = { ...DEFAULT_HALO_OPTIONS, ...options };
   }
 
+  getMaxAttempts(): number {
+    return this.options.maxAttempts ?? MAX_HALO_ATTEMPTS;
+  }
+
   /**
    * Validate an output against identity rules.
    * 
@@ -163,6 +167,9 @@ export class SovereignHaloService {
       } else if (formalCount > informalCount) {
         detectedTone = "formal";
       }
+    } else {
+      // Unknown tone register — flag for review rather than silently passing
+      detectedTone = "unrecognized";
     }
 
     // Compute deviation score
@@ -231,9 +238,10 @@ export class SovereignHaloService {
     for (const anchor of expectedAnchors) {
       // Check if anchor concept or value appears in output
       const anchorLower = anchor.toLowerCase();
-      const anchorValue = schema.symbolicAnchors.find(a => a.concept === anchor)?.value?.toLowerCase() || "";
+      const anchorObj = schema.symbolicAnchors.find(a => a.concept === anchor);
+      const anchorValue = anchorObj?.value?.toLowerCase();
       
-      if (outputLower.includes(anchorLower) || outputLower.includes(anchorValue)) {
+      if (outputLower.includes(anchorLower) || (anchorValue && anchorValue.length > 0 && outputLower.includes(anchorValue))) {
         detectedAnchors.push(anchor);
       } else {
         missingAnchors.push(anchor);
@@ -275,13 +283,14 @@ export class SovereignHaloService {
       .map(c => c.detail);
 
     // Try to get fallback message from identity config
+    const DEFAULT_FALLBACK = "The generation could not satisfy identity constraints. Please refine your request.";
     const fallbackRule = identity.config?.customRules?.find(
       r => r.toLowerCase().startsWith("fallback:")
     );
     
     const safeFallbackMessage = fallbackRule
-      ? fallbackRule.split(":")[1]?.trim() || ""
-      : "The generation could not satisfy identity constraints. Please refine your request.";
+      ? (fallbackRule.split(":")[1]?.trim() || DEFAULT_FALLBACK)
+      : DEFAULT_FALLBACK;
 
     return {
       status: "failed",

@@ -59,8 +59,8 @@ export interface IdentityConfig {
   };
   /** Custom rules/constraints for reflective layer */
   customRules?: string[];
-  /** Additional metadata */
-  [key: string]: any;
+  /** Extension metadata — use this instead of arbitrary top-level keys */
+  metadata?: Record<string, unknown>;
 }
 
 /**

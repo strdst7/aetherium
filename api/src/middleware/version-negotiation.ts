@@ -65,7 +65,7 @@ export function addVersionToResponse(
   const originalJson = res.json.bind(res);
 
   res.json = function(body: any): Response {
-    if (body && typeof body === "object" && !body.apiVersion) {
+    if (body && typeof body === "object" && !Array.isArray(body) && !body.apiVersion) {
       body.apiVersion = req.apiVersion || CURRENT_API_VERSION;
     }
     return originalJson(body);

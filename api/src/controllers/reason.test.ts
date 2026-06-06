@@ -169,7 +169,7 @@ describe('ReasonController', () => {
 
       expect(result.plan).toBeDefined();
       expect(result.actions).toBeDefined();
-      expect(result.metadata.mode).toBe('task');
+      expect(result.metadata!.mode).toBe('task');
     });
 
     it('should not include plan in tool mode response', async () => {
@@ -180,7 +180,7 @@ describe('ReasonController', () => {
       });
 
       expect(result.plan).toBeUndefined();
-      expect(result.metadata.mode).toBe('tool');
+      expect(result.metadata!.mode).toBe('tool');
     });
   });
 });

@@ -32,15 +32,16 @@ describe("IdentityService", () => {
     service = new IdentityService();
     
     // Setup mock collection
+    const mockToArray = jest.fn().mockResolvedValue([]);
+    const mockSkip = jest.fn().mockReturnValue({ limit: jest.fn().mockReturnValue({ toArray: mockToArray }) });
     mockCollection = {
       createIndex: jest.fn().mockResolvedValue(undefined),
       insertOne: jest.fn().mockResolvedValue({ insertedId: "test-id" }),
       findOne: jest.fn().mockResolvedValue(null),
-      find: jest.fn().mockReturnValue({
-        toArray: jest.fn().mockResolvedValue([]),
-      }),
+      find: jest.fn().mockReturnValue({ skip: mockSkip, toArray: mockToArray }),
       findOneAndUpdate: jest.fn().mockResolvedValue(null),
       deleteOne: jest.fn().mockResolvedValue({ deletedCount: 1 }),
+      countDocuments: jest.fn().mockResolvedValue(0),
     };
 
     // Mock MongoClient
@@ -189,14 +190,21 @@ describe("IdentityService", () => {
         { id: "id_2", name: "Dev 2", developerId: "dev2@example.com" },
       ];
       mockCollection.find.mockReturnValue({
+        skip: jest.fn().mockReturnValue({
+          limit: jest.fn().mockReturnValue({
+            toArray: jest.fn().mockResolvedValue(mockIdentities),
+          }),
+        }),
         toArray: jest.fn().mockResolvedValue(mockIdentities),
       });
+      mockCollection.countDocuments.mockResolvedValue(2);
 
       const result = await service.listIdentities();
 
-      expect(result).toHaveLength(2);
-      expect(result[0].name).toBe("Dev 1");
-      expect(result[1].name).toBe("Dev 2");
+      expect(result.identities).toHaveLength(2);
+      expect(result.total).toBe(2);
+      expect(result.identities[0].name).toBe("Dev 1");
+      expect(result.identities[1].name).toBe("Dev 2");
     });
   });
 
@@ -242,16 +250,19 @@ describe("IdentityService", () => {
       expect(result?.name).toBe("Updated Name");
       expect(result?.version).toBe(2);
       expect(mockCollection.findOneAndUpdate).toHaveBeenCalledWith(
-        { id: "id_123" },
+        { id: "id_123", version: 1 },
         {
           $set: expect.objectContaining({
             name: "Updated Name",
-            version: 2,
           }),
+          $inc: { version: 1 },
           $push: {
             versions: expect.objectContaining({
               version: 1,
-              state: existingIdentity,
+              state: expect.objectContaining({
+                id: "id_123",
+                name: "Original Name",
+              }),
             }),
           },
         },

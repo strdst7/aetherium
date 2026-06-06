@@ -19,6 +19,12 @@ export class MockProvider implements AIProvider {
     maxTokens: 512,
   };
 
+  private forceFail = false;
+
+  setForceFail(v: boolean): void {
+    this.forceFail = v;
+  }
+
   private mockResponses: Record<string, string> = {
     halo: "The Halo Array is a superweapon built by the Forerunners to contain and destroy all sentient life in the galaxy. It represents an ultimate defense mechanism against the Flood parasite. The rings are distributed across the galaxy and can be activated in unison to sterilize all life.",
     flood: "The Flood is a parasitic species capable of assimilating organic matter and integrating their knowledge. It spreads rapidly and poses an existential threat to all galactic civilizations. Containment and eradication are the only known solutions.",
@@ -29,11 +35,11 @@ export class MockProvider implements AIProvider {
   };
 
   async generate(req: GenerateRequest): Promise<GenerateResponse> {
-    if (FORCE_FAIL) {
+    if (FORCE_FAIL || this.forceFail) {
       throw new Error("Simulated mock provider failure");
     }
 
-    const { model, messages = [], maxTokens = 512 } = req;
+    const { messages = [], maxTokens = 512 } = req;
 
     // Extract query from messages
     let query = "";
@@ -61,7 +67,7 @@ export class MockProvider implements AIProvider {
   }
 
   async embed(input: string | string[]): Promise<{ embeddings: number[] | number[][] }> {
-    if (FORCE_FAIL) {
+    if (FORCE_FAIL || this.forceFail) {
       throw new Error("Simulated mock embedding failure");
     }
 
@@ -74,7 +80,7 @@ export class MockProvider implements AIProvider {
   }
 
   async healthCheck(): Promise<{ ok: boolean; info?: any }> {
-    if (FORCE_FAIL) {
+    if (FORCE_FAIL || this.forceFail) {
       return { ok: false, info: "Forced mock failure" };
     }
     return {

@@ -107,11 +107,15 @@ export class MemoryService {
     return results;
   }
 
-  async searchByMetadata(filter: Record<string, any>, limit: number = 10): Promise<MemoryDocument[]> {
+  async searchByMetadata(filter: Record<string, any>, limit: number = 10, identityAnchor?: string): Promise<MemoryDocument[]> {
     if (!this.collection) {
       throw new Error("Memory service not connected");
     }
-    return this.collection.find(filter).limit(limit).toArray();
+    const scopedFilter = { ...filter };
+    if (identityAnchor) {
+      scopedFilter.sigil = identityAnchor;
+    }
+    return this.collection.find(scopedFilter).limit(limit).toArray();
   }
 
   async deleteById(id: string): Promise<boolean> {
@@ -129,11 +133,15 @@ export class MemoryService {
     await this.collection.deleteMany({});
   }
 
-  async getAll(): Promise<MemoryDocument[]> {
+  async getAll(identityAnchor?: string): Promise<MemoryDocument[]> {
     if (!this.collection) {
       throw new Error("Memory service not connected");
     }
-    return this.collection.find({}).toArray();
+    const filter: Record<string, any> = {};
+    if (identityAnchor) {
+      filter.sigil = identityAnchor;
+    }
+    return this.collection.find(filter).toArray();
   }
 
   async embedQuery(text: string): Promise<number[]> {

@@ -77,6 +77,9 @@ export class ProviderRegistry {
    * Returns the first registered provider (used for embeddings).
    */
   get defaultProvider(): AIProvider {
+    if (this.providers.length === 0) {
+      throw new Error("ProviderRegistry is empty — no providers have been registered");
+    }
     return this.providers[0].provider;
   }
 

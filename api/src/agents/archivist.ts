@@ -12,7 +12,7 @@ export class Archivist implements Agent {
 
   async act(input: string, ctx: AgentContext): Promise<AgentResponse> {
     const embedding = await this.memoryService.embedQuery(input);
-    const results = await this.memoryService.vectorSearch(embedding, 0.8, 8);
+    const results = await this.memoryService.vectorSearch(embedding, 0.8, 8, ctx.identityAnchor);
     const summary = `Found ${results.length} memories anchored to ${ctx.identityAnchor}.`;
     return { output: summary, meta: { results } };
   }

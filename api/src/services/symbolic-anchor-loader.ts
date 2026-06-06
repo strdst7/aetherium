@@ -1,4 +1,6 @@
 import { SymbolicAnchor } from "../types/mythic";
+import * as fs from "fs";
+import * as path from "path";
 
 /**
  * Loads symbolic anchors from the design system (design/sigil/v1.json).
@@ -13,15 +15,38 @@ export class SymbolicAnchorLoader {
   /**
    * Load symbolic anchors from the design system file.
    * 
-   * @param path Path to the design system JSON file (default: design/sigil/v1.json)
+   * @param filePath Path to the design system JSON file (default: design/sigil/v1.json)
    */
-  async load(path: string = "design/sigil/v1.json"): Promise<void> {
+  async load(filePath: string = "design/sigil/v1.json"): Promise<void> {
     try {
-      const designSystem = await import(path);
+      // Find root directory (where design/ resides)
+      // If we are in api/src/services/, root is ../../../
+      const possiblePaths = [
+        path.resolve(process.cwd(), filePath),
+        path.resolve(process.cwd(), "..", filePath),
+        path.resolve(__dirname, "..", "..", "..", filePath)
+      ];
+
+      let designSystem;
+      let loadedPath = "";
+
+      for (const p of possiblePaths) {
+        if (fs.existsSync(p)) {
+          const content = fs.readFileSync(p, "utf-8");
+          designSystem = JSON.parse(content);
+          loadedPath = p;
+          break;
+        }
+      }
+
+      if (!designSystem) {
+        throw new Error(`Design system file not found in any of: ${possiblePaths.join(", ")}`);
+      }
+
       this.anchors = this.parseDesignSystem(designSystem);
       this.loaded = true;
     } catch (error) {
-      console.warn(`[SymbolicAnchorLoader] Failed to load design system from ${path}:`, error);
+      console.warn(`[SymbolicAnchorLoader] Failed to load design system from ${filePath}:`, error);
       // Fallback to default anchors
       this.anchors = this.getDefaultAnchors();
       this.loaded = true;

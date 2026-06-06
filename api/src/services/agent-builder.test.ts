@@ -1,7 +1,7 @@
 import { AgentBuilder } from "./agent-builder";
 import { Orchestrator } from "./orchestrator";
 import { MCPClient } from "./mcp-client";
-import { ReasonRequest } from "../controllers/reason";
+import { ReasonRequest } from "../types/api-contracts";
 
 jest.mock("./orchestrator");
 jest.mock("./mcp-client");
@@ -196,7 +196,7 @@ describe("AgentBuilder", () => {
       const result = await agentBuilder.executeTask(req);
 
       expect(result.response.status).toBe("reject");
-      expect(result.response.metadata.error).toContain("Plan generation failed");
+      expect(result.response.metadata!.error).toContain("Plan generation failed");
     });
 
     it("should limit iterations to maxTaskIterations", async () => {
@@ -222,7 +222,7 @@ describe("AgentBuilder", () => {
       const result = await agentBuilder.executeTask(req, { maxTaskIterations: 2 });
 
       expect(result.toolCalls).toHaveLength(2);
-      expect(result.response.metadata.maxIterations).toBe(2);
+      expect(result.response.metadata!.maxIterations).toBe(2);
     });
   });
 });

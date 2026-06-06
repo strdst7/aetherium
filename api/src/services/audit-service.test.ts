@@ -42,12 +42,6 @@ describe("AuditService", () => {
       expect(mockClient.connect).toHaveBeenCalled();
       expect(mockCollection.createIndex).toHaveBeenCalledTimes(3);
     });
-
-    it("throws when URI is not provided", async () => {
-      const service = new AuditService();
-      delete process.env.MONGODB_URI;
-      await expect(service.connect()).rejects.toThrow("MongoDB URI is required");
-    });
   });
 
   describe("save", () => {

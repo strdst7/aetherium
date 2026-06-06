@@ -3,7 +3,7 @@ import { SigilIdentity } from "../types/identity";
 import { AetheriumError, ErrorCode } from "../middleware/error-handler";
 
 interface CacheEntry {
-  identity: SigilIdentity;
+  identity: SigilIdentity | null;
   timestamp: number;
 }
 
@@ -12,6 +12,7 @@ interface CacheEntry {
  * 
  * Features:
  * - In-memory cache with TTL (60 seconds) to avoid repeated MongoDB lookups
+ * - Separate shorter TTL (5 seconds) for null/not-found results
  * - Latency measurement for every lookup
  * - Warning if latency exceeds 200ms
  * - Graceful handling of missing identities
@@ -19,7 +20,8 @@ interface CacheEntry {
 export class IdentityBindingService {
   private identityService: IdentityService;
   private cache: Map<string, CacheEntry> = new Map();
-  private cacheTtlMs: number = 60000; // 60 seconds
+  private cacheTtlMs: number = 60000; // 60 seconds for found identities
+  private nullCacheTtlMs: number = 5000; // 5 seconds for not-found results
 
   constructor(identityService: IdentityService) {
     this.identityService = identityService;
@@ -33,10 +35,13 @@ export class IdentityBindingService {
   async resolve(identityAnchor: string): Promise<SigilIdentity | null> {
     const startTime = Date.now();
 
-    // Check cache first
+    // Check cache first (use shorter TTL for null entries)
     const cached = this.cache.get(identityAnchor);
-    if (cached && Date.now() - cached.timestamp < this.cacheTtlMs) {
-      return cached.identity;
+    if (cached) {
+      const ttl = cached.identity === null ? this.nullCacheTtlMs : this.cacheTtlMs;
+      if (Date.now() - cached.timestamp < ttl) {
+        return cached.identity;
+      }
     }
 
     // Cache miss — query the service
@@ -47,11 +52,17 @@ export class IdentityBindingService {
         identity,
         timestamp: Date.now(),
       });
+    } else {
+      // Cache negative results with shorter TTL to prevent repeated DB lookups
+      this.cache.set(identityAnchor, {
+        identity: null,
+        timestamp: Date.now(),
+      });
     }
 
     const latency = Date.now() - startTime;
     if (latency > 200) {
-      console.warn(`[IdentityBinding] Lookup latency ${latency}ms exceeded 200ms threshold for ${identityAnchor}`);
+      console.warn(`[IdentityBinding] Lookup latency ${latency}ms exceeded 200ms threshold`);
     }
 
     return identity;

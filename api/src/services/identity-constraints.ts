@@ -41,7 +41,7 @@ export class IdentityConstraintEngine {
       const outputLower = output.toLowerCase();
 
       if (trimmedRule.startsWith("must contain:")) {
-        const required = rule.split(":")[1]?.trim() || "";
+        const required = rule.split(":").slice(1).join(":").trim() || "";
         const passed = outputLower.includes(required.toLowerCase());
         ruleChecks.push({
           rule,
@@ -56,7 +56,7 @@ export class IdentityConstraintEngine {
           });
         }
       } else if (trimmedRule.startsWith("must not contain:")) {
-        const forbidden = rule.split(":")[1]?.trim() || "";
+        const forbidden = rule.split(":").slice(1).join(":").trim() || "";
         const passed = !outputLower.includes(forbidden.toLowerCase());
         ruleChecks.push({
           rule,
@@ -71,7 +71,7 @@ export class IdentityConstraintEngine {
           });
         }
       } else if (trimmedRule.startsWith("tone:")) {
-        const tone = rule.split(":")[1]?.trim() || "";
+        const tone = rule.split(":").slice(1).join(":").trim() || "";
         // Simple check: verify tone keyword appears in output
         const passed = outputLower.includes(tone.toLowerCase());
         ruleChecks.push({

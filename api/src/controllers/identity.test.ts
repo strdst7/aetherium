@@ -160,9 +160,9 @@ describe("IdentityController", () => {
         { id: "id_1", name: "Dev 1", developerId: "dev1@example.com" },
         { id: "id_2", name: "Dev 2", developerId: "dev2@example.com" },
       ];
-      mockService.listIdentities.mockResolvedValue(mockIdentities as any);
+      mockService.listIdentities.mockResolvedValue({ identities: mockIdentities, total: 2 } as any);
 
-      mockReq = {};
+      mockReq = { query: {} };
 
       await controller.list(mockReq as Request, mockRes as Response);
 
@@ -170,6 +170,7 @@ describe("IdentityController", () => {
         expect.objectContaining({
           identities: mockIdentities,
           count: 2,
+          total: 2,
           apiVersion: "1.0.0",
         })
       );

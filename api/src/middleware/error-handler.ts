@@ -180,20 +180,6 @@ export function errorHandler(
     return;
   }
 
-  // Handle MCP/tool errors
-  if (err.message && (
-    err.message.includes("MCP") ||
-    err.message.includes("tool")
-  )) {
-    const toolError = new AetheriumError(
-      ErrorCode.MCP_SERVER_ERROR,
-      err.message,
-      { instance: req.originalUrl }
-    );
-    res.status(422).json(toolError.toProblemDetails());
-    return;
-  }
-
   // Generic fallback
   const genericError = new AetheriumError(
     ErrorCode.INTERNAL_ERROR,

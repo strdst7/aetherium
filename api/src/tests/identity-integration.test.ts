@@ -10,15 +10,16 @@ describe("Identity Integration", () => {
     service = new IdentityService();
     
     // Mock the collection for integration tests
+    const mockToArray = jest.fn().mockResolvedValue([]);
+    const mockSkip = jest.fn().mockReturnValue({ limit: jest.fn().mockReturnValue({ toArray: mockToArray }) });
     const mockCollection = {
       createIndex: jest.fn().mockResolvedValue(undefined),
       insertOne: jest.fn().mockResolvedValue({ insertedId: "test-id" }),
       findOne: jest.fn().mockResolvedValue(null),
-      find: jest.fn().mockReturnValue({
-        toArray: jest.fn().mockResolvedValue([]),
-      }),
+      find: jest.fn().mockReturnValue({ skip: mockSkip, toArray: mockToArray }),
       findOneAndUpdate: jest.fn().mockResolvedValue(null),
       deleteOne: jest.fn().mockResolvedValue({ deletedCount: 1 }),
+      countDocuments: jest.fn().mockResolvedValue(0),
     };
 
     // Inject mock collection directly
@@ -123,20 +124,27 @@ describe("Identity Integration", () => {
       );
 
       // 4. List
-      const listReq = {} as Request;
+      const listReq = { query: {} } as Request;
       const listRes = {
         json: jest.fn().mockReturnThis(),
       } as unknown as Response;
 
       mockCollection.find.mockReturnValue({
+        skip: jest.fn().mockReturnValue({
+          limit: jest.fn().mockReturnValue({
+            toArray: jest.fn().mockResolvedValue([mockIdentity]),
+          }),
+        }),
         toArray: jest.fn().mockResolvedValue([mockIdentity]),
       });
+      mockCollection.countDocuments = jest.fn().mockResolvedValue(1);
 
       await controller.list(listReq, listRes);
 
       expect(listRes.json).toHaveBeenCalledWith(
         expect.objectContaining({
           count: 1,
+          total: 1,
           apiVersion: "1.0.0",
         })
       );

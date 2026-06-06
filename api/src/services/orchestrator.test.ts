@@ -12,7 +12,6 @@ describe('Orchestrator', () => {
   let mockProvider: any;
   let mockRegistry: jest.Mocked<ProviderRegistry>;
   let mockMemoryService: jest.Mocked<MemoryService>;
-  let mockReflectiveService: jest.Mocked<ReflectiveService>;
   let orchestrator: Orchestrator;
 
   beforeEach(() => {
@@ -44,7 +43,6 @@ describe('Orchestrator', () => {
     ]);
 
     // Setup mock reflective service
-    mockReflectiveService = new ReflectiveService() as jest.Mocked<ReflectiveService>;
     (ReflectiveService as jest.Mock).mockImplementation(() => ({
       evaluate: jest.fn().mockReturnValue({ status: 'approved', violations: [] })
     }));

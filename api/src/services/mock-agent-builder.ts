@@ -1,5 +1,5 @@
 import { AgentBuilderConfig, AgentBuilderResult } from "./agent-builder";
-import { ReasonRequest, TaskPlan, PlanStep, Action, ActionType } from "../controllers/reason";
+import { ReasonRequest, TaskPlan, PlanStep, Action, ActionType } from "../types/api-contracts";
 import { ToolCall } from "../adapters/ai-adapter";
 import { ToolExecutionResult } from "./mcp-client";
 

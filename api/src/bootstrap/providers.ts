@@ -16,7 +16,7 @@ export async function registerProviders() {
   );
 
   // Primary provider (priority 1)
-  const ollamaProvider = new OllamaProvider(process.env.OLLAMA_URL);
+  const ollamaProvider = new OllamaProvider();
   registry.register(
     ollamaProvider,
     1,

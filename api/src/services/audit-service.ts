@@ -1,5 +1,5 @@
 import { MongoClient, Db } from "mongodb";
-import { createHash } from "crypto";
+import { createHash, randomUUID } from "crypto";
 import {
   AuditRecord,
   AuditRecordCreate,
@@ -30,7 +30,7 @@ export class AuditService {
    */
   async connect(uri?: string): Promise<void> {
     const connectionUri = uri || this.uri || process.env.MONGODB_URI;
-    if (!connectionUri) {
+    if (!connectionUri || connectionUri === "undefined") {
       throw new Error("MongoDB URI is required for AuditService");
     }
 
@@ -132,7 +132,17 @@ export class AuditService {
    * Generate SHA-256 hash of key fields for tamper detection.
    */
   generateHash(record: AuditRecordCreate): string {
-    const canonical = `${record.identityId}|${record.identityVersion}|${record.prompt}|${record.output}|${record.provenance.providerName}`;
+    const canonical = JSON.stringify({
+      identityId: record.identityId,
+      identityVersion: record.identityVersion,
+      prompt: record.prompt,
+      output: record.output,
+      originalOutput: record.provenance.originalOutput,
+      providerName: record.provenance.providerName,
+      modelVersion: record.provenance.modelVersion,
+      regenerationAttempts: record.provenance.regenerationAttempts,
+      mythifyTransformations: record.provenance.mythifyTransformations,
+    });
     return createHash("sha256").update(canonical).digest("hex");
   }
 
@@ -164,11 +174,7 @@ export class AuditService {
    * Generate a UUID v4 string.
    */
   private generateUUID(): string {
-    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
-      const r = (Math.random() * 16) | 0;
-      const v = c === "x" ? r : (r & 0x3) | 0x8;
-      return v.toString(16);
-    });
+    return randomUUID();
   }
 
   /**

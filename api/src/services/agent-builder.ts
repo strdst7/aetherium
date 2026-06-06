@@ -1,6 +1,6 @@
 import { Orchestrator, OrchestratorRequest, OrchestratorResponse } from "./orchestrator";
 import { MCPClient, ToolExecutionResult, MCPTool } from "./mcp-client";
-import { ReasonRequest, ReasonResponse, TaskPlan, PlanStep, Action, ActionType } from "../controllers/reason";
+import { ReasonRequest, ReasonResponse, TaskPlan, PlanStep, Action, ActionType } from "../types/api-contracts";
 import { ToolCall, ToolDefinition } from "../adapters/ai-adapter";
 
 export interface AgentBuilderConfig {
@@ -68,6 +68,9 @@ export class AgentBuilder {
     const effectiveConfig = { ...this.config, ...config };
 
     if (!effectiveConfig.enableTools || !this.mcpClient.isHealthy() || this.tools.length === 0) {
+      if (effectiveConfig.enableTools && this.tools.length === 0) {
+        console.warn('[AgentBuilder] Tools enabled but no tools discovered — falling back to standard reasoning');
+      }
       // Standard reasoning path (no tools)
       const orchestratorReq: OrchestratorRequest = {
         identity_anchor: req.identity_anchor,
@@ -91,11 +94,7 @@ export class AgentBuilder {
             orchestrator: {
               selectedProvider: result.context.selectedProvider,
               relevantMemoriesCount: result.context.relevantMemories.length,
-              topMemories: result.context.relevantMemories.slice(0, 3).map((m) => ({
-                id: m.doc.id || m.doc._id || "unknown",
-                score: m.score,
-                excerpt: (m.doc.content || (m.doc as any).note || "").substring(0, 150),
-              })),
+              topMemories: this.mapTopMemories(result.context.relevantMemories),
             },
             reflective: result.reflectiveResult as any,
             trace: [],
@@ -168,11 +167,7 @@ export class AgentBuilder {
             orchestrator: {
               selectedProvider: result.context.selectedProvider,
               relevantMemoriesCount: result.context.relevantMemories.length,
-              topMemories: result.context.relevantMemories.slice(0, 3).map((m) => ({
-                id: m.doc.id || m.doc._id || "unknown",
-                score: m.score,
-                excerpt: (m.doc.content || (m.doc as any).note || "").substring(0, 150),
-              })),
+              topMemories: this.mapTopMemories(result.context.relevantMemories),
             },
             reflective: result.reflectiveResult as any,
             trace: [],
@@ -332,8 +327,9 @@ export class AgentBuilder {
       }
 
       // Step 4: Determine plan status
+      const allStepsAttempted = completedSteps + failedSteps >= plan.steps.length;
       const planStatus: "completed" | "partial" | "failed" =
-        failedSteps === 0 ? "completed" :
+        allStepsAttempted && failedSteps === 0 ? "completed" :
         completedSteps > 0 ? "partial" : "failed";
 
       // Step 5: Build final response
@@ -347,7 +343,7 @@ export class AgentBuilder {
           identity_anchor: req.identity_anchor,
           reasoning: {
             orchestrator: {
-              selectedProvider: "gemini",
+              selectedProvider: "unknown",
               relevantMemoriesCount: 0,
               topMemories: [],
             },
@@ -355,7 +351,7 @@ export class AgentBuilder {
               status: "approved",
               violations: [],
               suggestedConstraints: [],
-              confidenceScore: 1.0,
+              confidenceScore: plan.steps.length > 0 ? completedSteps / plan.steps.length : 0,
             },
             trace: [],
           },
@@ -397,6 +393,14 @@ export class AgentBuilder {
         },
       };
     }
+  }
+
+  private mapTopMemories(memories: Array<{ doc: Record<string, any>; score: number }>, count = 3) {
+    return memories.slice(0, count).map((m) => ({
+      id: m.doc.id || m.doc._id || "unknown",
+      score: m.score,
+      excerpt: (m.doc.content || (m.doc as any).note || "").substring(0, 150),
+    }));
   }
 
   async shutdown(): Promise<void> {

@@ -16,13 +16,18 @@ export class OllamaProvider implements AIProvider {
   };
 
   private baseUrl: string;
+  private forceFail = false;
+
+  setForceFail(v: boolean): void {
+    this.forceFail = v;
+  }
 
   constructor(baseUrl: string = process.env.OLLAMA_URL || "http://localhost:11434") {
     this.baseUrl = baseUrl;
   }
 
   async generate(req: GenerateRequest): Promise<GenerateResponse> {
-    if (FORCE_FAIL) {
+    if (FORCE_FAIL || this.forceFail) {
       throw new Error("Simulated Ollama provider failure");
     }
 
@@ -66,7 +71,7 @@ export class OllamaProvider implements AIProvider {
   }
 
   async embed(input: string | string[]): Promise<{ embeddings: number[] | number[][] }> {
-    if (FORCE_FAIL) {
+    if (FORCE_FAIL || this.forceFail) {
       throw new Error("Simulated Ollama embedding failure");
     }
 
@@ -115,7 +120,7 @@ export class OllamaProvider implements AIProvider {
   }
 
   async healthCheck(): Promise<{ ok: boolean; info?: any }> {
-    if (FORCE_FAIL) {
+    if (FORCE_FAIL || this.forceFail) {
       return { ok: false, info: "Forced failure (simulated)" };
     }
 
@@ -129,7 +134,8 @@ export class OllamaProvider implements AIProvider {
         };
       }
       return { ok: false };
-    } catch {
+    } catch (error) {
+      console.warn('[OllamaProvider] Health check failed:', error instanceof Error ? error.message : String(error));
       return { ok: false };
     }
   }

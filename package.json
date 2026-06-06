@@ -12,5 +12,8 @@
   "workspaces": [
     "api",
     "web"
-  ]
+  ],
+  "dependencies": {
+    "@google/genai": "^2.8.0"
+  }
 }

@@ -23,12 +23,17 @@ describe("GeminiProvider", () => {
     });
 
     it("should default to env vars when not provided", () => {
-      process.env.GEMINI_API_KEY = "env-key";
-      process.env.GEMINI_MODEL = "gemini-1.5-pro";
-      const p = new GeminiProvider();
-      expect(p.name).toBe("gemini");
-      delete process.env.GEMINI_API_KEY;
-      delete process.env.GEMINI_MODEL;
+      const origApiKey = process.env.GEMINI_API_KEY;
+      const origModel = process.env.GEMINI_MODEL;
+      try {
+        process.env.GEMINI_API_KEY = "env-key";
+        process.env.GEMINI_MODEL = "gemini-1.5-pro";
+        const p = new GeminiProvider();
+        expect(p.name).toBe("gemini");
+      } finally {
+        process.env.GEMINI_API_KEY = origApiKey;
+        process.env.GEMINI_MODEL = origModel;
+      }
     });
   });
 

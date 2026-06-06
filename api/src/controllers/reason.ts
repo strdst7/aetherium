@@ -3,92 +3,18 @@ import { ReflectiveService, ReflectiveCheckResult } from "../services/reflective
 import { AgentBuilder } from "../services/agent-builder";
 import { ToolCall } from "../adapters/ai-adapter";
 import { ToolExecutionResult } from "../services/mcp-client";
-import { CURRENT_API_VERSION } from "../types/api-contracts";
-
-export type ActionType = "report" | "update" | "trigger" | "notify";
-
-export type PlanStatus = "pending" | "in_progress" | "completed" | "partial" | "failed";
-
-export interface PlanStep {
-  stepNumber: number;
-  tool: string;
-  args: Record<string, any>;
-  expectedResult?: string;
-  status?: "pending" | "in_progress" | "completed" | "failed";
-  retryCount?: number;
-}
-
-export interface TaskPlan {
-  steps: PlanStep[];
-  description: string;
-  estimatedSteps: number;
-}
-
-export interface Action {
-  type: ActionType;
-  title: string;
-  data: any;
-  format: string;
-}
-
-export interface ReasonRequest {
-  identity_anchor: string;
-  messages: Array<{ role: string; content: string }>;
-  options?: {
-    maxTokens?: number;
-    temperature?: number;
-    policy?: any;
-    memoryAlpha?: number;
-    memoryK?: number;
-    skipReflection?: boolean;
-    enableTools?: boolean;
-    mode?: "tool" | "task";
-    maxToolIterations?: number;
-    maxTaskIterations?: number;
-  };
-}
-
-export interface ReasoningTrace {
-  stage: string;
-  timestamp: string;
-  details: any;
-}
-
-export interface ToolExecutionTrace {
-  step: number;
-  toolCall: ToolCall;
-  result: ToolExecutionResult;
-  timestamp: string;
-}
-
-export interface ReasonResponse {
-  id: string;
-  output: string;
-  status: "approved" | "refine" | "reject";
-  identity_anchor: string;
-  reasoning: {
-    orchestrator: {
-      selectedProvider: string;
-      relevantMemoriesCount: number;
-      topMemories: Array<{ id: string; score: number; excerpt: string }>;
-    };
-    reflective: ReflectiveCheckResult;
-    trace: ReasoningTrace[];
-  };
-  toolCalls?: ToolCall[];
-  toolResults?: ToolExecutionResult[];
-  toolExecutionTrace?: ToolExecutionTrace[];
-  plan?: TaskPlan;
-  actions?: Action[];
-  planStatus?: PlanStatus;
-  metadata?: any;
-  apiVersion?: string;
-  identity?: {
-    id: string;
-    name: string;
-    version: number;
-  };
-}
+import {
+  CURRENT_API_VERSION,
+  ActionType,
+  PlanStatus,
+  PlanStep,
+  TaskPlan,
+  Action,
+  ReasonRequest,
+  ReasoningTrace,
+  ToolExecutionTrace,
+  ReasonResponse,
+} from "../types/api-contracts";
 
 export class ReasonController {
   private orchestrator: Orchestrator;
@@ -198,46 +124,46 @@ export class ReasonController {
             },
           });
         } else {
-        trace.push({
-          stage: "agent_builder_start",
-          timestamp: new Date().toISOString(),
-          details: { enableTools: true },
-        });
+          trace.push({
+            stage: "agent_builder_start",
+            timestamp: new Date().toISOString(),
+            details: { enableTools: true },
+          });
 
-        const agentResult = await this.agentBuilder.execute(req, {
-          enableTools: true,
-          maxToolIterations: 5,
-        });
+          const agentResult = await this.agentBuilder.execute(req, {
+            enableTools: true,
+            maxToolIterations: 5,
+          });
 
-        orchestratorResponse = {
-          id: agentResult.response.id,
-          text: agentResult.response.output,
-          context: {
-            identity_anchor: req.identity_anchor,
-            queryEmbedding: [],
-            relevantMemories: [],
-            systemPrompt: "",
-            fullPrompt: "",
-            selectedProvider: agentResult.response.reasoning.orchestrator.selectedProvider,
-          },
-          reflectiveResult: agentResult.response.reasoning.reflective,
-        };
-        toolCalls = agentResult.toolCalls;
-        toolResults = agentResult.toolResults;
-        toolExecutionTrace = agentResult.toolExecutionTrace;
+          orchestratorResponse = {
+            id: agentResult.response.id,
+            text: agentResult.response.output,
+            context: {
+              identity_anchor: req.identity_anchor,
+              queryEmbedding: [],
+              relevantMemories: [],
+              systemPrompt: "",
+              fullPrompt: "",
+              selectedProvider: agentResult.response.reasoning.orchestrator.selectedProvider,
+            },
+            reflectiveResult: agentResult.response.reasoning.reflective,
+          };
+          toolCalls = agentResult.toolCalls;
+          toolResults = agentResult.toolResults;
+          toolExecutionTrace = agentResult.toolExecutionTrace;
 
-        trace.push({
-          stage: "agent_builder_complete",
-          timestamp: new Date().toISOString(),
-          details: {
-            selectedProvider: agentResult.response.reasoning.orchestrator.selectedProvider,
-            toolCallsCount: toolCalls?.length || 0,
-          },
-        });
+          trace.push({
+            stage: "agent_builder_complete",
+            timestamp: new Date().toISOString(),
+            details: {
+              selectedProvider: agentResult.response.reasoning.orchestrator.selectedProvider,
+              toolCallsCount: toolCalls?.length || 0,
+            },
+          });
+        }
+      } else {
+        orchestratorResponse = await this.orchestrator.process(orchestratorReq);
       }
-    } else {
-      orchestratorResponse = await this.orchestrator.process(orchestratorReq);
-    }
 
       trace.push({
         stage: "orchestrator_complete",
@@ -253,7 +179,7 @@ export class ReasonController {
       trace.push({
         stage: "reflective_check_start",
         timestamp: new Date().toISOString(),
-        details: null,
+        details: {},
       });
 
       let reflectiveResult: ReflectiveCheckResult;
@@ -282,10 +208,12 @@ export class ReasonController {
       });
 
       // Step 3: Build response
+      const extractContent = (doc: any): string => doc?.content || doc?.note || "";
+      const extractId = (doc: any): string => doc?.id || doc?._id?.toString() || "unknown";
       const topMemories = orchestratorResponse.context.relevantMemories.slice(0, 3).map((m) => ({
-        id: m.doc.id || m.doc._id || "unknown",
+        id: extractId(m.doc),
         score: m.score,
-        excerpt: (m.doc.content || (m.doc as any).note || "").substring(0, 150),
+        excerpt: extractContent(m.doc).substring(0, 150),
       }));
 
       const response: ReasonResponse = {
@@ -327,7 +255,7 @@ export class ReasonController {
         stage: "response_complete",
         timestamp: new Date().toISOString(),
         details: {
-          totalProcessingTimeMs: response.metadata.processingTimeMs,
+          totalProcessingTimeMs: response.metadata?.processingTimeMs,
         },
       });
 
@@ -360,19 +288,19 @@ export class ReasonController {
       }
     }
 
-    if (req.options?.maxTokens && req.options.maxTokens < 1) {
+    if (req.options?.maxTokens !== undefined && req.options.maxTokens < 1) {
       throw new Error("maxTokens must be greater than 0");
     }
 
-    if (req.options?.temperature && (req.options.temperature < 0 || req.options.temperature > 2)) {
+    if (req.options?.temperature !== undefined && (req.options.temperature < 0 || req.options.temperature > 2)) {
       throw new Error("temperature must be between 0 and 2");
     }
 
-    if (req.options?.memoryK && req.options.memoryK < 1) {
+    if (req.options?.memoryK !== undefined && req.options.memoryK < 1) {
       throw new Error("memoryK must be greater than 0");
     }
 
-    if (req.options?.memoryAlpha && (req.options.memoryAlpha < 0 || req.options.memoryAlpha > 1)) {
+    if (req.options?.memoryAlpha !== undefined && (req.options.memoryAlpha < 0 || req.options.memoryAlpha > 1)) {
       throw new Error("memoryAlpha must be between 0 and 1");
     }
   }
@@ -395,11 +323,11 @@ export class ReasonController {
       "batch", "bulk", "mass update", "in bulk",
     ];
 
-    const hasTaskKeywords = taskKeywords.some((keyword) => queryText.includes(keyword));
+    const hasTaskKeywords = taskKeywords.some((keyword) => new RegExp(`\\b${keyword}\\b`).test(queryText));
     
     // Also check for compound sentences (multiple verbs)
     const verbs = ["find", "query", "search", "update", "delete", "create", "insert", "modify"];
-    const verbCount = verbs.filter((verb) => queryText.includes(verb)).length;
+    const verbCount = verbs.filter((verb) => new RegExp(`\\b${verb}\\b`).test(queryText)).length;
     const hasMultipleVerbs = verbCount >= 2;
 
     if (hasTaskKeywords || hasMultipleVerbs) {
@@ -424,11 +352,7 @@ export function createReasonRouter(
       const response = await controller.handleReason(input);
       res.status(200).json(response);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Internal server error";
-      res.status(400).json({
-        error: message,
-        timestamp: new Date().toISOString(),
-      });
+      next(error);
     }
   };
 }

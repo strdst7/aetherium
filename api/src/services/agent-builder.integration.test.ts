@@ -4,7 +4,7 @@ import { MCPClient } from './mcp-client';
 import { ProviderRegistry } from './provider-registry';
 import { MemoryService } from './memory-service';
 import { ReflectiveService } from './reflective-service';
-import { ReasonRequest } from '../controllers/reason';
+import { ReasonRequest } from '../types/api-contracts';
 
 // Integration test for MongoDB Assistant Challenge
 // This test demonstrates the full pipeline: plan → query → update → action synthesis

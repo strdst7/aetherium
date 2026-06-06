@@ -5,12 +5,14 @@
  * These types provide compile-time guarantees for API contracts.
  */
 
+import { ToolCall } from "../adapters/ai-adapter";
+
 export type ApiVersion = "1.0.0";
 
 export const CURRENT_API_VERSION: ApiVersion = "1.0.0";
 
 export interface VersionedResponse {
-  apiVersion: ApiVersion;
+  apiVersion?: ApiVersion;
 }
 
 export interface Message {
@@ -74,12 +76,6 @@ export interface ReasoningPayload {
   trace: ReasoningTrace[];
 }
 
-export interface ToolCall {
-  id: string;
-  name: string;
-  arguments: Record<string, any>;
-}
-
 export interface ToolExecutionResult {
   success: boolean;
   data?: Record<string, any>;
@@ -140,6 +136,11 @@ export interface ReasonResponse extends VersionedResponse {
   actions?: Action[];
   planStatus?: PlanStatus;
   metadata?: ResponseMetadata;
+  identity?: {
+    id: string;
+    name: string;
+    version: number;
+  };
 }
 
 export interface HealthResponse extends VersionedResponse {

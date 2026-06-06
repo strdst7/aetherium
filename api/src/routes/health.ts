@@ -1,15 +1,17 @@
 import { Router } from "express";
 import { HealthResponse, ApiInfoResponse } from "../types/api-contracts";
 import { CURRENT_API_VERSION } from "../types/api-contracts";
+import { MemoryService } from "../services/memory-service";
+import { ProviderRegistry } from "../services/provider-registry";
 
 /**
  * Creates routes for health checks and API information.
  */
 export function createHealthRouter(
   options?: {
-    memoryService?: any;
-    providerRegistry?: any;
-    mcpClient?: any;
+    memoryService?: MemoryService;
+    providerRegistry?: ProviderRegistry;
+    mcpClient?: { isHealthy(): boolean };
   }
 ): Router {
   const router = Router();
@@ -17,6 +19,7 @@ export function createHealthRouter(
 
   // Health check endpoint
   router.get("/health", async (req, res) => {
+    try {
     const checks: HealthResponse["checks"] = {
       database: "ok",
       llm: "ok",
@@ -26,10 +29,9 @@ export function createHealthRouter(
     // Check database if memory service is provided
     if (options?.memoryService) {
       try {
-        // Simple ping - if it fails, mark as error
-        await options.memoryService.vectorSearch?.([0], 0.5, 1).catch(() => {
-          checks.database = "error";
-        });
+        if (options.memoryService.vectorSearch) {
+          await options.memoryService.vectorSearch([0], 0.5, 1);
+        }
       } catch {
         checks.database = "error";
       }
@@ -38,17 +40,10 @@ export function createHealthRouter(
     // Check LLM providers
     if (options?.providerRegistry) {
       try {
-        const providers = options.providerRegistry.listProviders?.() || [];
-        let healthy = false;
-        for (const p of providers) {
-          const result = await p.healthCheck?.();
-          if (result && result.ok) {
-            healthy = true;
-            break;
-          }
-        }
-        if (!healthy && providers.length > 0) {
-          checks.llm = "error";
+        const providerList = options.providerRegistry.listProviders?.() || [];
+        if (providerList.length > 0) {
+          // Attempt to pick a healthy provider — throws if none are healthy
+          await options.providerRegistry.pick({});
         }
       } catch {
         checks.llm = "error";
@@ -81,6 +76,10 @@ export function createHealthRouter(
     };
 
     res.status(overallStatus === "ok" ? 200 : 503).json(response);
+    } catch (err) {
+      console.error("[Health] Unexpected error:", err);
+      res.status(503).json({ status: "error", detail: "Health check failed" });
+    }
   });
 
   // API info endpoint

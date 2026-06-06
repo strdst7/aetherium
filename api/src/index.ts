@@ -13,6 +13,7 @@ import { MCPClient } from "./services/mcp-client";
 import { AgentBuilder } from "./services/agent-builder";
 import { versionNegotiation, addVersionToResponse } from "./middleware/version-negotiation";
 import { errorHandler } from "./middleware/error-handler";
+import { validateRequestMiddleware, validateResponseMiddleware } from "./middleware/openapi-validator";
 import { createDocsRouter } from "./routes/docs";
 import { createHealthRouter } from "./routes/health";
 import { IdentityService } from "./services/identity-service";
@@ -47,11 +48,6 @@ app.use((req, res, next) => {
 // Version negotiation middleware
 app.use(versionNegotiation);
 app.use(addVersionToResponse);
-
-// Health check
-app.get("/health", (req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
-});
 
 // Initialize services
 async function bootstrap() {
@@ -98,6 +94,11 @@ async function bootstrap() {
     console.log(`⚠️  Ollama provider health: ${ollamaHealth.ok ? "healthy" : "unavailable (using mock fallback)"}`);
     console.log("✅ Providers registered");
 
+    // Initialize audit service
+    const auditService = new AuditService();
+    await auditService.connect(process.env.MONGODB_URI);
+    console.log("✅ Audit service connected");
+
     // Initialize orchestrator (with identity binding, mythic module, sovereign halo, and audit service)
     const registry = ProviderRegistry.instance;
     const orchestrator = new Orchestrator(memoryService, registry, identityBinding, mythicModule, sovereignHalo, auditService);
@@ -138,27 +139,18 @@ async function bootstrap() {
     app.use("/", createMultiAgentRouter(multiAgentOrchestrator));
     console.log("✅ Multi-agent routes registered with Sovereign Halo");
 
-    // Initialize audit service
-    const auditService = new AuditService();
-    await auditService.connect(process.env.MONGODB_URI);
-    console.log("✅ Audit service connected");
-
     // Register audit routes
     app.use("/", createAuditRouter(auditService));
     console.log("✅ Audit routes registered");
 
     // Register reason endpoint
     const reasonController = new ReasonController(orchestrator, reflectiveService, agentBuilder);
-    app.post("/v1/reason", async (req, res) => {
+    app.post("/v1/reason", validateRequestMiddleware, async (req, res, next) => {
       try {
         const response = await reasonController.handleReason(req.body);
         res.json(response);
       } catch (error) {
-        const message = error instanceof Error ? error.message : "Internal server error";
-        res.status(400).json({
-          error: message,
-          timestamp: new Date().toISOString(),
-        });
+        next(error);
       }
     });
 
@@ -175,8 +167,11 @@ async function bootstrap() {
     console.log("✅ Documentation routes registered");
 
     // Register identity routes
-    app.use("/", createIdentityRouter(identityService));
+    app.use("/v1", createIdentityRouter(identityService));
     console.log("✅ Identity routes registered");
+
+    // Response validation middleware
+    app.use(validateResponseMiddleware);
 
     // Error handling middleware (must be last)
     app.use(errorHandler);

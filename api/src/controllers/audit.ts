@@ -124,7 +124,7 @@ export class AuditController {
 
   private isValidISODate(dateString: string): boolean {
     const date = new Date(dateString);
-    return !isNaN(date.getTime()) && date.toISOString() === dateString;
+    return !isNaN(date.getTime()) && dateString.includes("T");
   }
 }
 
@@ -134,6 +134,11 @@ export function createAuditRouter(auditService: AuditService): Router {
 
   // Only GET endpoint — no POST, PUT, DELETE, PATCH for immutability
   router.get("/audit", (req, res) => controller.getAuditRecords(req, res));
+
+  // TODO(v2): Add GET /audit/:recordId/verify endpoint for hash-based tamper detection.
+  // This would recompute the SHA-256 hash server-side and compare it against the stored hash,
+  // giving clients a trustable verification path independent of re-implementing the hashing logic.
+  // Blocked on: v2 audit API contract definition.
 
   return router;
 }

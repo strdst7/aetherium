@@ -63,11 +63,15 @@ export class IdentityController {
    * List all identities.
    */
   async list(req: Request, res: Response): Promise<void> {
-    const identities = await this.service.listIdentities();
+    const limit = parseInt(req.query.limit as string, 10) || 100;
+    const skip = parseInt(req.query.skip as string, 10) || 0;
+
+    const result = await this.service.listIdentities(limit, skip);
 
     res.json({
-      identities,
-      count: identities.length,
+      identities: result.identities,
+      count: result.identities.length,
+      total: result.total,
       apiVersion: CURRENT_API_VERSION,
     });
   }
@@ -174,6 +178,15 @@ export class IdentityController {
 
   private validateUpdateRequest(req: IdentityUpdateRequest): void {
     const errors: Array<{ field: string; message: string; code: string }> = [];
+
+    // Require at least one updatable field
+    if (req.name === undefined && req.config === undefined) {
+      errors.push({
+        field: "body",
+        message: "At least one field (name, config) must be provided for update",
+        code: "MISSING_FIELD",
+      });
+    }
 
     if (req.name !== undefined && (typeof req.name !== "string" || req.name.trim().length === 0)) {
       errors.push({

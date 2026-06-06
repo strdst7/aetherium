@@ -3,6 +3,7 @@ import { SigilKeeper } from "../agents/sigil-keeper";
 import { Narrator } from "../agents/narrator";
 import { AgentContext } from "../agents/types";
 import { MemoryService } from "./memory-service";
+import { ProviderRegistryInstance } from "./provider-registry";
 import { ReflectiveService } from "./reflective-service";
 import { IdentityBindingService } from "./identity-binding";
 import { SigilIdentity } from "../types/identity";
@@ -97,13 +98,26 @@ export class MultiAgentOrchestrator {
 
     // Council agents get 1 regeneration attempt
     const violations = report.checks.filter(c => !c.passed).map(c => c.detail);
-    const tightenedOutput = `${output}\n\n[Constraints: ${violations.join("; ")}]`;
     
-    // Re-validate with tightened output
-    const newReport = await this.sovereignHalo.validate(tightenedOutput, identity);
+    // Actually regenerate via LLM with tightened constraints (not just text concatenation)
+    const tightenedPrompt = `System: You are Aetherium, the AI steward. Revise the following output to satisfy these constraints:
+
+Constraints:
+${violations.map(v => `- ${v}`).join("\n")}
+
+Previous output:
+${output}
+
+Generate a corrected version that passes all constraints above. Do NOT include the constraint violations in your output.`;
+
+    const provider = await ProviderRegistryInstance.pick();
+    const candidate = await provider.generate({ prompt: tightenedPrompt, model: "demo" });
+    const regeneratedOutput = candidate.text || output;
+    
+    const newReport = await this.sovereignHalo.validate(regeneratedOutput, identity);
     
     if (newReport.status === "passed") {
-      return { valid: true, report: newReport, regeneratedOutput: tightenedOutput };
+      return { valid: true, report: newReport, regeneratedOutput };
     }
 
     return { valid: false, report: newReport };

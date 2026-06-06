@@ -63,7 +63,7 @@ export class MockProviderFactory implements AIProvider {
   ): Promise<{ embeddings: number[] | number[][] }> {
     const inputs = Array.isArray(input) ? input : [input];
     const embeddings = inputs.map(
-      () => this.options.embedResult
+      () => [...this.options.embedResult]
     );
 
     return {

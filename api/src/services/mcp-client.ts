@@ -44,6 +44,7 @@ export class MCPClient {
   private restartAttempts = 0;
   private maxRestarts = 3;
   private isRunning = false;
+  private shuttingDown = false;
 
   constructor(serverPath: string = process.env.MCP_SERVER_PATH || "") {
     this.serverPath = serverPath;
@@ -128,6 +129,7 @@ export class MCPClient {
     }
   }
 
+  /** Returns the full schema of discovered tools. Available for external consumers. */
   getSchema(): MCPSchema {
     return {
       tools: this.discoveredTools,
@@ -139,6 +141,7 @@ export class MCPClient {
   }
 
   async stop(): Promise<void> {
+    this.shuttingDown = true;
     if (this.process && !this.process.killed) {
       this.process.kill("SIGTERM");
       // Wait for graceful shutdown
@@ -190,6 +193,7 @@ export class MCPClient {
   }
 
   private handleCrash(): void {
+    if (this.shuttingDown) return;
     if (this.restartAttempts < this.maxRestarts) {
       this.restartAttempts++;
       const delay = Math.pow(2, this.restartAttempts) * 1000; // Exponential backoff

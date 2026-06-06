@@ -1,5 +1,5 @@
 import { MockAgentBuilder } from './mock-agent-builder';
-import { ReasonRequest } from '../controllers/reason';
+import { ReasonRequest } from '../types/api-contracts';
 
 describe('MockAgentBuilder', () => {
   let mockAgentBuilder: MockAgentBuilder;

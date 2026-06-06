@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { MongoClient, Db, Collection } from "mongodb";
 import {
   SigilIdentity,
@@ -64,8 +65,12 @@ export class IdentityService {
       throw new Error("Identity service not connected");
     }
 
+    if (!request.name?.trim() || !request.developerId?.trim()) {
+      throw new Error("name and developerId are required and must be non-empty");
+    }
+
     const now = new Date().toISOString();
-    const id = `id_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    const id = `id_${crypto.randomUUID()}`;
     const sigilHash = generateSigilHash(request.name, request.developerId);
 
     const identity: SigilIdentity = {
@@ -80,7 +85,14 @@ export class IdentityService {
       updatedAt: now,
     };
 
-    await this.collection.insertOne(identity);
+    try {
+      await this.collection.insertOne(identity);
+    } catch (error: any) {
+      if (error?.code === 11000) {
+        throw new Error(`Developer '${request.developerId}' is already registered`);
+      }
+      throw error;
+    }
     return identity;
   }
 
@@ -109,12 +121,16 @@ export class IdentityService {
   /**
    * List all identities.
    */
-  async listIdentities(): Promise<SigilIdentity[]> {
+  async listIdentities(limit: number = 100, skip: number = 0): Promise<{ identities: SigilIdentity[]; total: number }> {
     if (!this.collection) {
       throw new Error("Identity service not connected");
     }
 
-    return await this.collection.find().toArray();
+    const [identities, total] = await Promise.all([
+      this.collection.find().skip(skip).limit(limit).toArray(),
+      this.collection.countDocuments(),
+    ]);
+    return { identities, total };
   }
 
   /**
@@ -134,18 +150,17 @@ export class IdentityService {
     }
 
     const now = new Date().toISOString();
-    const newVersion = existing.version + 1;
 
-    // Create version snapshot
+    // Create version snapshot (exclude versions array to prevent recursive growth)
+    const { versions, ...stateWithoutVersions } = existing;
     const versionSnapshot: IdentityVersion = {
       version: existing.version,
       timestamp: existing.updatedAt,
-      state: { ...existing },
+      state: stateWithoutVersions as unknown as SigilIdentity,
     };
 
     // Build update
     const update: Partial<SigilIdentity> = {
-      version: newVersion,
       updatedAt: now,
     };
 
@@ -159,15 +174,20 @@ export class IdentityService {
       update.config = { ...existing.config, ...request.config };
     }
 
-    // Update document and push version
+    // Update document and push version (with optimistic locking)
     const result = await this.collection.findOneAndUpdate(
-      { id },
+      { id, version: existing.version },
       {
         $set: update,
+        $inc: { version: 1 },
         $push: { versions: versionSnapshot },
       },
       { returnDocument: "after" }
     );
+
+    if (!result) {
+      throw new Error(`Identity '${id}' was modified concurrently. Please retry.`);
+    }
 
     return result;
   }

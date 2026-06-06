@@ -2,7 +2,7 @@ import { ProviderRegistry } from './provider-registry';
 import { MemoryService, VectorSearchResult } from './memory-service';
 import { ReflectiveService } from './reflective-service';
 import { ToolDefinition, ToolCall } from '../adapters/ai-adapter';
-import { TaskPlan, PlanStep } from '../controllers/reason';
+import { TaskPlan, PlanStep } from '../types/api-contracts';
 import { IdentityBindingService } from './identity-binding';
 import { SigilIdentity } from '../types/identity';
 import { MythicModule } from './mythic-module';
@@ -11,6 +11,8 @@ import { ValidationReport } from '../types/halo';
 import { AuditService } from './audit-service';
 import { AuditRecordCreate, AuditProvenance } from '../types/audit';
 import { CURRENT_API_VERSION } from '../types/api-contracts';
+
+const DEFAULT_MODEL = 'gemini-1.5-pro';
 
 export interface OrchestratorContext {
   identity_anchor: string;
@@ -58,11 +60,12 @@ export class Orchestrator {
     identityBinding?: IdentityBindingService,
     mythicModule?: MythicModule,
     sovereignHalo?: SovereignHaloService,
-    auditService?: AuditService
+    auditService?: AuditService,
+    reflectiveService?: ReflectiveService
   ) {
     this.memoryService = memoryService;
     this.providerRegistry = providerRegistry;
-    this.reflectiveService = new ReflectiveService();
+    this.reflectiveService = reflectiveService || new ReflectiveService();
     this.identityBinding = identityBinding;
     this.mythicModule = mythicModule;
     this.sovereignHalo = sovereignHalo;
@@ -85,9 +88,7 @@ export class Orchestrator {
     let embedding: number[] = [0];
     if (provider.embed) {
       const embedResult = await provider.embed(queryText);
-      embedding = Array.isArray(embedResult.embeddings[0]) 
-        ? (embedResult.embeddings[0] as number[]) 
-        : (embedResult.embeddings as number[]);
+      embedding = this.extractEmbedding(embedResult);
     }
 
     // Step 2: memory retrieval (identity-scoped)
@@ -120,7 +121,7 @@ export class Orchestrator {
     };
 
     // Step 4: Generate and validate through Sovereign Halo
-    const { responseText, validationReport } = await this.generateAndValidate(
+    const { responseText, originalOutput, validationReport } = await this.generateAndValidate(
       req,
       identity,
       provider,
@@ -169,7 +170,7 @@ User: ${queryText}
     };
 
     // Step 6: Save audit record (best-effort)
-    await this.saveAuditRecord(req, response, identity, provider, startTime);
+    await this.saveAuditRecord(req, response, identity, provider, DEFAULT_MODEL, originalOutput, startTime);
 
     return response;
   }
@@ -190,9 +191,7 @@ User: ${queryText}
     let embedding: number[] = [0];
     if (provider.embed) {
       const embedResult = await provider.embed(queryText);
-      embedding = Array.isArray(embedResult.embeddings[0]) 
-        ? (embedResult.embeddings[0] as number[]) 
-        : (embedResult.embeddings as number[]);
+      embedding = this.extractEmbedding(embedResult);
     }
 
     // Step 2: memory retrieval (identity-scoped)
@@ -230,13 +229,14 @@ User: ${queryText}
     }
 
     const candidate = await provider.generateWithTools({
-      model: 'gemini-1.5-pro',
+      model: DEFAULT_MODEL,
       prompt: context.fullPrompt,
       maxTokens: req.maxTokens,
       temperature: req.temperature
     }, tools);
 
     let responseText = candidate.text || '';
+    const originalOutput = responseText;
     
     // Step 4b: Mythify output if identity and mythic module available
     if (identity && this.mythicModule && responseText) {
@@ -254,7 +254,7 @@ User: ${queryText}
     let validationReport: ValidationReport | undefined;
     if (this.sovereignHalo && identity) {
       let attempts = 1;
-      const maxAttempts = this.sovereignHalo['options']?.maxAttempts || 3;
+      const maxAttempts = this.sovereignHalo.getMaxAttempts();
 
       while (attempts <= maxAttempts) {
         const report = await this.sovereignHalo.validate(responseText, identity, attempts);
@@ -277,7 +277,7 @@ User: ${queryText}
         const newTemp = Math.max(0.1, (req.temperature || 0.7) - (attempts * 0.1));
         
         const refined = await provider.generateWithTools({
-          model: 'gemini-1.5-pro',
+          model: DEFAULT_MODEL,
           prompt: tightenedPrompt,
           maxTokens: req.maxTokens || 200,
           temperature: newTemp,
@@ -303,7 +303,7 @@ User: ${queryText}
     };
 
     // Step 7: Save audit record (best-effort)
-    await this.saveAuditRecord(req, response, identity, provider, startTime);
+    await this.saveAuditRecord(req, response, identity, provider, DEFAULT_MODEL, originalOutput, startTime);
 
     return response;
   }
@@ -312,12 +312,35 @@ User: ${queryText}
     const { identity_anchor, messages } = req;
     const queryText = messages.map((m: any) => m.content).join(' ');
 
+    // Load identity if binding service available (same pattern as process())
+    let identity: SigilIdentity | null = null;
+    if (this.identityBinding) {
+      identity = await this.identityBinding.resolve(identity_anchor);
+    }
+
     const provider = await this.providerRegistry.pick({ requireToolUse: true });
     if (!provider.generateWithTools) {
       throw new Error('Provider does not support tool use');
     }
 
-    const planPrompt = `You are a task planner. Given a user request and available tools, create a step-by-step plan to fulfill the request.
+    // Build identity context for plan prompt
+    let identityContext = '';
+    if (identity) {
+      identityContext = `\nIdentity: ${identity.name}`;
+      identityContext += `\nIdentity rules: ${identity.config?.customRules?.join(', ') || 'none'}`;
+
+      // Add mythic context if available
+      if (this.mythicModule) {
+        try {
+          const mythicContext = await this.mythicModule.generatePromptContext(identity);
+          identityContext += `\n${mythicContext.fullContext}`;
+        } catch (error) {
+          console.warn('[Orchestrator] Failed to generate mythic context for plan:', error);
+        }
+      }
+    }
+
+    const planPrompt = `You are a task planner for Aetherium.${identityContext} Given a user request and available tools, create a step-by-step plan to fulfill the request.
 
 Available tools:
 ${JSON.stringify(tools.map(t => ({ name: t.name, description: t.description, parameters: t.parameters })), null, 2)}
@@ -341,7 +364,7 @@ Respond with a JSON object in this exact format:
 Provide ONLY the JSON object, no markdown formatting, no additional text.`;
 
     const candidate = await provider.generateWithTools({
-      model: 'gemini-1.5-pro',
+      model: DEFAULT_MODEL,
       prompt: planPrompt,
       maxTokens: req.maxTokens || 1024,
       temperature: req.temperature || 0.2
@@ -403,16 +426,17 @@ Provide ONLY the JSON object, no markdown formatting, no additional text.`;
     queryText: string,
     memories: any[],
     systemPrompt: string
-  ): Promise<{ responseText: string; validationReport?: ValidationReport; attempts: number }> {
+  ): Promise<{ responseText: string; originalOutput: string; validationReport?: ValidationReport; attempts: number }> {
     // Generate initial candidate
     const prompt = `${systemPrompt}\nMemories:\n${JSON.stringify(memories)}\nUser:\n${queryText}`;
     let candidate = await provider.generate({
-      model: 'demo',
+      model: DEFAULT_MODEL,
       prompt,
       maxTokens: req.maxTokens,
       temperature: req.temperature
     });
     let responseText = candidate.text || '';
+    const originalOutput = responseText;
 
     // Mythify if available
     if (identity && this.mythicModule && responseText) {
@@ -429,19 +453,19 @@ Provide ONLY the JSON object, no markdown formatting, no additional text.`;
     // Sovereign Halo validation
     if (this.sovereignHalo && identity) {
       let attempts = 1;
-      const maxAttempts = this.sovereignHalo['options']?.maxAttempts || 3;
+      const maxAttempts = this.sovereignHalo.getMaxAttempts();
 
       while (attempts <= maxAttempts) {
         const report = await this.sovereignHalo.validate(responseText, identity, attempts);
         
         if (report.status === 'passed') {
-          return { responseText, validationReport: report, attempts };
+          return { responseText, originalOutput, validationReport: report, attempts };
         }
 
         if (attempts >= maxAttempts) {
           const failureReport = this.sovereignHalo.generateFailureReport(report, attempts, identity);
           responseText = failureReport.safeFallbackMessage;
-          return { responseText, validationReport: report, attempts };
+          return { responseText, originalOutput, validationReport: report, attempts };
         }
 
         // Tighten constraints and regenerate
@@ -450,7 +474,7 @@ Provide ONLY the JSON object, no markdown formatting, no additional text.`;
         const newTemp = Math.max(0.1, (req.temperature || 0.7) - (attempts * 0.1));
         
         candidate = await provider.generate({
-          model: 'demo',
+          model: DEFAULT_MODEL,
           prompt: tightenedPrompt,
           maxTokens: req.maxTokens || 200,
           temperature: newTemp,
@@ -460,7 +484,13 @@ Provide ONLY the JSON object, no markdown formatting, no additional text.`;
       }
     }
 
-    return { responseText, attempts: 0 };
+    return { responseText, originalOutput, attempts: 0 };
+  }
+
+  private extractEmbedding(embedResult: { embeddings: number[] | number[][] }): number[] {
+    return Array.isArray(embedResult.embeddings[0])
+      ? (embedResult.embeddings[0] as number[])
+      : (embedResult.embeddings as number[]);
   }
 
   /**
@@ -490,6 +520,8 @@ Provide ONLY the JSON object, no markdown formatting, no additional text.`;
     response: OrchestratorResponse,
     identity: SigilIdentity | null,
     provider: any,
+    modelName: string,
+    originalOutput: string,
     startTime: number
   ): Promise<void> {
     if (!this.auditService || !identity) {
@@ -498,9 +530,9 @@ Provide ONLY the JSON object, no markdown formatting, no additional text.`;
 
     try {
       const provenance: AuditProvenance = {
-        originalOutput: response.text,
+        originalOutput,
         providerName: response.context.selectedProvider,
-        modelVersion: provider.model || 'unknown',
+        modelVersion: modelName,
         mythifyTransformations: [],
         regenerationAttempts: response.validationReport?.attemptNumber,
         validationReport: response.validationReport,
@@ -533,26 +565,4 @@ Provide ONLY the JSON object, no markdown formatting, no additional text.`;
   }
 }
 
-// Keep legacy function for compatibility if needed
-export async function orchestrateReasoning(req: any) {
-  const registry = ProviderRegistry.instance;
-  const memoryService = new MemoryService();
-  const orchestrator = new Orchestrator(memoryService, registry);
-  
-  const response = await orchestrator.process({
-    identity_anchor: req.identity_anchor,
-    messages: req.messages,
-    policy: typeof req.options?.policy === 'object' ? req.options.policy : {},
-    memoryAlpha: req.options?.alpha,
-    memoryK: 5,
-    maxTokens: req.options?.maxTokens,
-    temperature: req.options?.temperature
-  });
 
-  return { 
-    candidate: response.text, 
-    reflectiveResult: response.reflectiveResult, 
-    refinedCandidate: response.refinedCandidate,
-    memories: response.context.relevantMemories 
-  };
-}

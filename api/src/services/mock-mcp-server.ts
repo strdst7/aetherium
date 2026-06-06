@@ -55,6 +55,7 @@ rl.on("line", (line) => {
   } catch (error) {
     console.log(JSON.stringify({
       jsonrpc: "2.0",
+      id: null,
       error: { code: -32700, message: "Parse error" },
     }));
   }
