@@ -1,4 +1,4 @@
-import { describeIfRealProvider, itIfRealProvider } from "./helpers/real-provider-guard";
+import { describeIfRealProvider, itIfRealProvider, guardRealProviderTests } from "./helpers/real-provider-guard";
 import { checkRequiredEnvVars } from "./helpers/env-checker";
 import { GeminiProvider } from "../adapters/gemini-provider";
 import { ProviderRegistry } from "../services/provider-registry";
@@ -12,6 +12,45 @@ import { SymbolicAnchorLoader } from "../services/symbolic-anchor-loader";
 import { SovereignHaloService } from "../services/sovereign-halo";
 import { IdentityConstraintEngine } from "../services/identity-constraints";
 import { createIdentity } from "./fixtures/identity-factory";
+
+describe("Real Provider Guard Utilities", () => {
+  it("should return shouldRun=false when no credentials are present", () => {
+    const originalKey = process.env.GEMINI_API_KEY;
+    const originalForce = process.env.FORCE_REAL_PROVIDER_TESTS;
+    delete process.env.GEMINI_API_KEY;
+    delete process.env.FORCE_REAL_PROVIDER_TESTS;
+
+    const result = guardRealProviderTests();
+    expect(result.shouldRun).toBe(false);
+    expect(result.reason).toMatch(/Missing real provider credentials/);
+
+    if (originalKey !== undefined) process.env.GEMINI_API_KEY = originalKey;
+    if (originalForce !== undefined) process.env.FORCE_REAL_PROVIDER_TESTS = originalForce;
+  });
+
+  it("should return shouldRun=true when FORCE_REAL_PROVIDER_TESTS is set", () => {
+    const originalForce = process.env.FORCE_REAL_PROVIDER_TESTS;
+    const originalKey = process.env.GEMINI_API_KEY;
+    delete process.env.GEMINI_API_KEY;
+    process.env.FORCE_REAL_PROVIDER_TESTS = "true";
+
+    const result = guardRealProviderTests();
+    expect(result.shouldRun).toBe(true);
+    expect(result.reason).toMatch(/Forced/);
+
+    if (originalForce !== undefined) process.env.FORCE_REAL_PROVIDER_TESTS = originalForce;
+    else delete process.env.FORCE_REAL_PROVIDER_TESTS;
+    if (originalKey !== undefined) process.env.GEMINI_API_KEY = originalKey;
+  });
+
+  it("should validate env vars with custom validators", () => {
+    const result = checkRequiredEnvVars([
+      { name: "TEST_VAR_A", description: "Test var", validate: (v) => v.length >= 5 },
+    ]);
+    expect(result.allPresent).toBe(false);
+    expect(result.missing).toContain("TEST_VAR_A");
+  });
+});
 
 describeIfRealProvider("Real Provider E2E — Gemini", () => {
   const testUri =
