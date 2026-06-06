@@ -46,12 +46,6 @@ describe("Latency Validation", () => {
       skipSafetyCheck: true,
     });
 
-    const mockProvider = new MockProviderFactory({
-      deterministic: true,
-      responseText: "Mock generated response for latency test",
-    });
-    registry.register(mockProvider, 0, ["local", "embeddings"]);
-
     orchestrator = new Orchestrator(
       memoryService,
       registry,
