@@ -30,8 +30,11 @@ jobs:
       - name: Install API dependencies
         run: cd api && npm ci
 
+      - name: Run API type check
+        run: cd api && npx tsc --noEmit
+
       - name: Run API tests
-        run: cd api && npm test -- --coverage --passWithNoTests --detectOpenHandles --forceExit
+        run: cd api && npm test -- --coverage --detectOpenHandles --forceExit
         env:
           MONGODB_URI: mongodb://localhost:27017/aetherium_test
 
@@ -58,8 +61,11 @@ jobs:
       - name: Install web dependencies
         run: cd web && npm ci
 
+      - name: Verify web build
+        run: cd web && npm run build
+
       - name: Run web tests
-        run: cd web && npm test -- --coverage --passWithNoTests --forceExit --roots src
+        run: cd web && npm test -- --coverage --forceExit --roots src
 
       - name: Upload web coverage
         uses: actions/upload-artifact@v4

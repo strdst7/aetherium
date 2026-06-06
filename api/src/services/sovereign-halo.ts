@@ -167,6 +167,8 @@ export class SovereignHaloService {
       } else if (formalCount > informalCount) {
         detectedTone = "formal";
       }
+    } else if (expectedTone === "neutral") {
+      detectedTone = "neutral";
     } else {
       // Unknown tone register — flag for review rather than silently passing
       detectedTone = "unrecognized";

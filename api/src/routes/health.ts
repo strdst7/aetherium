@@ -42,8 +42,19 @@ export function createHealthRouter(
       try {
         const providerList = options.providerRegistry.listProviders?.() || [];
         if (providerList.length > 0) {
-          // Attempt to pick a healthy provider — throws if none are healthy
-          await options.providerRegistry.pick({});
+          const healthResults = await Promise.all(
+            providerList.map(async (p: any) => {
+              try {
+                const result = await p.healthCheck?.();
+                return result?.ok !== false;
+              } catch {
+                return false;
+              }
+            })
+          );
+          if (healthResults.some(r => !r)) {
+            checks.llm = "error";
+          }
         }
       } catch {
         checks.llm = "error";
