@@ -30,7 +30,13 @@
   1. Agent can initialize a Gemini reasoning session with tool-use enabled
   2. Agent can use Google Cloud Agent Builder framework to register and invoke tools
   3. Agent can connect to the MongoDB MCP server, discover schema, and execute a basic query
-**Plans**: TBD
+**Plans**: 4 plans in 3 waves
+
+Plans:
+- [ ] 01-01-PLAN.md — Gemini Provider Integration (AIProvider extension + GeminiProvider + bootstrap)
+- [ ] 01-02-PLAN.md — MCP Client + AgentBuilder (stdio transport + tool management + lifecycle)
+- [ ] 01-03-PLAN.md — Orchestrator Integration + API Contracts (tool loop + ReasonResponse extension + wiring)
+- [ ] 01-04-PLAN.md — Test Infrastructure (MockAgentBuilder + MockMCPServer + unit + integration tests)
 
 ### Phase 2: Agent Task Engine
 **Goal**: Agent can decompose user requests, execute multi-step tool workflows, and take real-world action via the MongoDB assistant  

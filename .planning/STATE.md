@@ -39,8 +39,8 @@
 ```
 
 **Current Focus:**
-- Phase 1 context gathered
-- Next action: `/gsd-plan-phase 1` for planning
+- Phase 1 planning complete
+- Next action: `/gsd-execute-phase 1` for execution
 
 ---
 
@@ -78,7 +78,7 @@ _None yet._
 ### TODOs
 
 - [x] Approve roadmap
-- [ ] Plan Phase 1 (Agent Core Foundation)
+- [x] Plan Phase 1 (Agent Core Foundation)
 - [x] Verify existing API contracts are documented for backward compatibility checks
 - [ ] Execute Phase 1 (Agent Core Foundation)
 
