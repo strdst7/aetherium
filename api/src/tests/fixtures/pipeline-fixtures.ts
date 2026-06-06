@@ -60,10 +60,12 @@ const mythicIdentity = createIdentity({
   name: "Mythic Identity",
   config: {
     preferredProvider: "gemini",
-    customRules: ["Use formal language"],
-    voice: "formal",
-    tone: "academic",
-    symbolicAnchors: ["wisdom", "scholar"],
+    customRules: [
+      "Use formal language",
+      "tone: academic",
+      "must contain: wisdom",
+      "must contain: scholar"
+    ],
   },
 });
 
@@ -82,8 +84,11 @@ const constrainedIdentity = createIdentity({
   name: "Constrained Identity",
   config: {
     preferredProvider: "gemini",
-    customRules: ["Be helpful"],
-    forbiddenBehaviors: ["no jokes", "no slang"],
+    customRules: [
+      "Be helpful",
+      "must not contain: no jokes",
+      "must not contain: no slang"
+    ],
   },
 });
 
