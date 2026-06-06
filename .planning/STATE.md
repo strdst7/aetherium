@@ -29,18 +29,18 @@
 
 | Field | Value |
 |-------|-------|
-| Phase | 2 |
+| Phase | 3 |
 | Plan | — |
-| Status | Context gathered |
+| Status | Planned |
 
 **Progress:**
 ```
-[█░░░░░░░░░░░░░░░░░░░] 9% (1/11 phases)
+[███░░░░░░░░░░░░░░░░░] 27% (3/11 phases)
 ```
 
 **Current Focus:**
-- Phase 2 context gathered — Agent Task Engine
-- Next action: `/gsd-plan-phase 2` for planning
+- Phase 3 planned — Agent Interface & Contracts
+- Next action: `/gsd-execute-phase 3` to execute Phase 3 plans
 
 ---
 
@@ -49,12 +49,22 @@
 | Phase | Name | Date | Status |
 |-------|------|------|--------|
 | 1 | Agent Core Foundation | 2026-06-06 | Complete |
+| 2 | Agent Task Engine | 2026-06-06 | Complete |
+| 3 | Agent Interface & Contracts | 2026-06-06 | Planned |
 
 ### Phase 1 Summary
 - **Gemini Provider Integration:** Extended AIProvider with tool-use, implemented GeminiProvider, registered with priority 0
 - **MCP Client + AgentBuilder:** Created MCP client with stdio transport, AgentBuilder wrapping Orchestrator
 - **Orchestrator Integration:** Extended ReasonResponse with tool fields, updated POST /v1/reason endpoint
 - **Test Infrastructure:** MockAgentBuilder, MockMCPServer, unit tests for all components
+
+### Phase 2 Summary
+- **Task Schema & Types:** Defined PlanStep, TaskPlan, Action, ActionType, PlanStatus types with backward compatibility
+- **Orchestrator Plan Generation:** Added `generatePlan()` method that decomposes natural-language requests into structured tool plans
+- **AgentBuilder Task Execution:** Implemented `executeTask()` with plan-then-execute pipeline, retry logic, and action synthesis
+- **Controller Mode Routing:** Added explicit and auto-detected mode routing (tool/task) with keyword heuristics
+- **Mock & Test Infrastructure:** Updated MockAgentBuilder and MockMCPServer with task mode support
+- **MongoDB Assistant Demo:** Created demo data seeding script and integration test demonstrating query + update pipeline
 
 ---
 
@@ -90,7 +100,9 @@
 - [x] Verify existing API contracts are documented for backward compatibility checks
 - [x] Execute Phase 1 (Agent Core Foundation)
 - [x] Plan Phase 2 (Agent Task Engine)
-- [ ] Execute Phase 2 (Agent Task Engine)
+- [x] Execute Phase 2 (Agent Task Engine)
+- [x] Plan Phase 3 (Agent Interface & Contracts)
+- [ ] Execute Phase 3 (Agent Interface & Contracts)
 
 ### Blockers
 

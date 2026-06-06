@@ -64,7 +64,13 @@ Plans:
   1. Developer can submit a natural-language request to a documented API endpoint
   2. Agent returns structured responses containing reasoning trace, tool calls made, and final action taken
   3. API contracts are versioned and backward-compatible with existing integrations
-**Plans**: TBD
+**Plans**: 4 plans in 3 waves
+
+Plans:
+- [ ] 03-01-PLAN.md — API Contract Specification (OpenAPI 3.0 spec + TypeScript type definitions)
+- [ ] 03-02-PLAN.md — Versioning & Error Contract (version negotiation middleware + RFC 7807 error handler)
+- [ ] 03-03-PLAN.md — API Documentation & Discovery (Swagger UI + health/status endpoints)
+- [ ] 03-04-PLAN.md — Contract Validation & Testing (OpenAPI validation + backward compatibility tests)
 
 ### Phase 4: Identity Registration & Persistence
 **Goal**: Developer can register, retrieve, list, and version SigilIdentities through a REST API  
@@ -170,7 +176,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Agent Core Foundation | 0/5 | Not started | - |
 | 2. Agent Task Engine | 6/6 | Planned | - |
-| 3. Agent Interface & Contracts | 0/4 | Not started | - |
+| 3. Agent Interface & Contracts | 0/4 | Planned | - |
 | 4. Identity Registration & Persistence | 0/7 | Not started | - |
 | 5. Identity-Bound Reasoning | 0/7 | Not started | - |
 | 6. Mythic Module | 0/6 | Not started | - |
