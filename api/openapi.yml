@@ -1509,8 +1509,9 @@ components:
           format: date-time
           description: When this snapshot was created
         state:
-          $ref: '#/components/schemas/SigilIdentity'
           description: Full identity state at this version
+          allOf:
+            - $ref: '#/components/schemas/SigilIdentity'
 
     IdentityCreateRequest:
       type: object
