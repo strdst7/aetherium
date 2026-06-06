@@ -66,6 +66,8 @@ describe("Audit Service Integration", () => {
     expect(retrieved.hash).toBeTruthy();
     expect(retrieved.provenance).toBeDefined();
     expect(retrieved.provenance.providerName).toBe("mock-factory");
+    expect(retrieved.metadata).toBeDefined();
+    expect(retrieved.metadata!.processingTimeMs).toBe(150);
   });
 
   it("should reject updates to existing audit records", async () => {
