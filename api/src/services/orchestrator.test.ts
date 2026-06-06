@@ -94,4 +94,75 @@ describe('Orchestrator', () => {
     expect(secondCall.prompt).toContain('Constraints:');
     expect(secondCall.prompt).toContain('- Geometry violation');
   });
+
+  describe('generatePlan', () => {
+    it('should generate a structured plan from a natural language request', async () => {
+      const mockPlanResponse = {
+        id: 'plan-1',
+        text: JSON.stringify({
+          description: 'Find inactive users',
+          estimatedSteps: 2,
+          steps: [
+            {
+              stepNumber: 1,
+              tool: 'query',
+              args: { status: 'inactive' },
+              expectedResult: 'List of inactive users'
+            },
+            {
+              stepNumber: 2,
+              tool: 'update',
+              args: { status: 'active' },
+              expectedResult: 'Updated user statuses'
+            }
+          ]
+        })
+      };
+
+      mockProvider.generateWithTools = jest.fn().mockResolvedValue(mockPlanResponse);
+      mockRegistry.pick.mockResolvedValue(mockProvider);
+
+      const result = await orchestrator.generatePlan({
+        identity_anchor: 'anchor',
+        messages: [{ role: 'user', content: 'Find inactive users and update their status' }]
+      }, [
+        { name: 'query', description: 'Query users', parameters: {} },
+        { name: 'update', description: 'Update users', parameters: {} }
+      ]);
+
+      expect(result.description).toBe('Find inactive users');
+      expect(result.estimatedSteps).toBe(2);
+      expect(result.steps).toHaveLength(2);
+      expect(result.steps[0].tool).toBe('query');
+      expect(result.steps[1].tool).toBe('update');
+    });
+
+    it('should handle malformed plan responses gracefully', async () => {
+      mockProvider.generateWithTools = jest.fn().mockResolvedValue({
+        id: 'plan-2',
+        text: 'Invalid JSON response'
+      });
+      mockRegistry.pick.mockResolvedValue(mockProvider);
+
+      const result = await orchestrator.generatePlan({
+        identity_anchor: 'anchor',
+        messages: [{ role: 'user', content: 'Do something' }]
+      }, [
+        { name: 'query', description: 'Query tool', parameters: {} }
+      ]);
+
+      expect(result.steps).toHaveLength(1);
+      expect(result.steps[0].status).toBe('pending');
+    });
+
+    it('should throw error when provider does not support tool use', async () => {
+      mockProvider.generateWithTools = undefined;
+      mockRegistry.pick.mockResolvedValue(mockProvider);
+
+      await expect(orchestrator.generatePlan({
+        identity_anchor: 'anchor',
+        messages: [{ role: 'user', content: 'Do something' }]
+      }, [])).rejects.toThrow('Provider does not support tool use');
+    });
+  });
 });

@@ -3,6 +3,33 @@ import { ReflectiveService, ReflectiveCheckResult } from "../services/reflective
 import { AgentBuilder } from "../services/agent-builder";
 import { ToolCall } from "../adapters/ai-adapter";
 import { ToolExecutionResult } from "../services/mcp-client";
+import { CURRENT_API_VERSION } from "../types/api-contracts";
+
+export type ActionType = "report" | "update" | "trigger" | "notify";
+
+export type PlanStatus = "pending" | "in_progress" | "completed" | "partial" | "failed";
+
+export interface PlanStep {
+  stepNumber: number;
+  tool: string;
+  args: Record<string, any>;
+  expectedResult?: string;
+  status?: "pending" | "in_progress" | "completed" | "failed";
+  retryCount?: number;
+}
+
+export interface TaskPlan {
+  steps: PlanStep[];
+  description: string;
+  estimatedSteps: number;
+}
+
+export interface Action {
+  type: ActionType;
+  title: string;
+  data: any;
+  format: string;
+}
 
 export interface ReasonRequest {
   identity_anchor: string;
@@ -15,6 +42,9 @@ export interface ReasonRequest {
     memoryK?: number;
     skipReflection?: boolean;
     enableTools?: boolean;
+    mode?: "tool" | "task";
+    maxToolIterations?: number;
+    maxTaskIterations?: number;
   };
 }
 
@@ -48,6 +78,9 @@ export interface ReasonResponse {
   toolCalls?: ToolCall[];
   toolResults?: ToolExecutionResult[];
   toolExecutionTrace?: ToolExecutionTrace[];
+  plan?: TaskPlan;
+  actions?: Action[];
+  planStatus?: PlanStatus;
   metadata?: any;
 }
 
@@ -100,9 +133,65 @@ export class ReasonController {
       let toolCalls: ToolCall[] | undefined;
       let toolResults: ToolExecutionResult[] | undefined;
       let toolExecutionTrace: ToolExecutionTrace[] | undefined;
+      let plan: TaskPlan | undefined;
+      let actions: Action[] | undefined;
+      let planStatus: PlanStatus | undefined;
+
+      // Determine mode: explicit or auto-detected
+      const mode = this.detectMode(req);
+      const isTaskMode = mode === 'task';
 
       // Use AgentBuilder when enableTools is true
       if (req.options?.enableTools && this.agentBuilder) {
+        trace.push({
+          stage: "agent_builder_mode",
+          timestamp: new Date().toISOString(),
+          details: { mode, isTaskMode },
+        });
+
+        if (isTaskMode) {
+          trace.push({
+            stage: "agent_builder_task_start",
+            timestamp: new Date().toISOString(),
+            details: { maxTaskIterations: req.options?.maxTaskIterations || 20 },
+          });
+
+          const agentResult = await this.agentBuilder.executeTask(req, {
+            enableTools: true,
+            maxTaskIterations: req.options?.maxTaskIterations || 20,
+          });
+
+          orchestratorResponse = {
+            id: agentResult.response.id,
+            text: agentResult.response.output,
+            context: {
+              identity_anchor: req.identity_anchor,
+              queryEmbedding: [],
+              relevantMemories: [],
+              systemPrompt: "",
+              fullPrompt: "",
+              selectedProvider: agentResult.response.reasoning.orchestrator.selectedProvider,
+            },
+            reflectiveResult: agentResult.response.reasoning.reflective,
+          };
+          toolCalls = agentResult.toolCalls;
+          toolResults = agentResult.toolResults;
+          toolExecutionTrace = agentResult.toolExecutionTrace;
+          plan = agentResult.response.plan;
+          actions = agentResult.response.actions;
+          planStatus = agentResult.response.planStatus;
+
+          trace.push({
+            stage: "agent_builder_task_complete",
+            timestamp: new Date().toISOString(),
+            details: {
+              selectedProvider: agentResult.response.reasoning.orchestrator.selectedProvider,
+              planStatus: agentResult.response.planStatus,
+              actionsCount: actions?.length || 0,
+              toolCallsCount: toolCalls?.length || 0,
+            },
+          });
+        } else {
         trace.push({
           stage: "agent_builder_start",
           timestamp: new Date().toISOString(),
@@ -139,9 +228,10 @@ export class ReasonController {
             toolCallsCount: toolCalls?.length || 0,
           },
         });
-      } else {
-        orchestratorResponse = await this.orchestrator.process(orchestratorReq);
       }
+    } else {
+      orchestratorResponse = await this.orchestrator.process(orchestratorReq);
+    }
 
       trace.push({
         stage: "orchestrator_complete",
@@ -209,10 +299,15 @@ export class ReasonController {
         toolCalls,
         toolResults,
         toolExecutionTrace,
+        plan,
+        actions,
+        planStatus,
         metadata: {
           processingTimeMs: Date.now() - startTime,
           version: "1.0",
+          mode: isTaskMode ? 'task' : 'tool',
         },
+        apiVersion: CURRENT_API_VERSION,
       };
 
       trace.push({
@@ -267,6 +362,38 @@ export class ReasonController {
     if (req.options?.memoryAlpha && (req.options.memoryAlpha < 0 || req.options.memoryAlpha > 1)) {
       throw new Error("memoryAlpha must be between 0 and 1");
     }
+  }
+
+  private detectMode(req: ReasonRequest): "tool" | "task" {
+    // Explicit mode takes precedence
+    if (req.options?.mode === "task" || req.options?.mode === "tool") {
+      return req.options.mode;
+    }
+
+    // Auto-detection heuristic
+    const queryText = req.messages.map((m) => m.content).join(" ").toLowerCase();
+    
+    // Task mode keywords: multi-step, sequential, and then, find and update, etc.
+    const taskKeywords = [
+      "find and", "query and", "search and", "update and", "delete and",
+      "create and", "then", "after that", "next", "finally",
+      "multiple steps", "multi-step", "plan", "execute",
+      "retrieve all", "get all", "list all", "for each",
+      "batch", "bulk", "mass update", "in bulk",
+    ];
+
+    const hasTaskKeywords = taskKeywords.some((keyword) => queryText.includes(keyword));
+    
+    // Also check for compound sentences (multiple verbs)
+    const verbs = ["find", "query", "search", "update", "delete", "create", "insert", "modify"];
+    const verbCount = verbs.filter((verb) => queryText.includes(verb)).length;
+    const hasMultipleVerbs = verbCount >= 2;
+
+    if (hasTaskKeywords || hasMultipleVerbs) {
+      return "task";
+    }
+
+    return "tool";
   }
 }
 

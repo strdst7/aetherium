@@ -29,6 +29,8 @@ export type ToolCall = {
   arguments: Record<string, any>;
 };
 
+export type ActionType = "report" | "update" | "trigger" | "notify";
+
 export interface AIProvider {
   name: string;
   capabilities: {

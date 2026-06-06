@@ -2,6 +2,7 @@ import { ProviderRegistry } from './provider-registry';
 import { MemoryService, VectorSearchResult } from './memory-service';
 import { ReflectiveService } from './reflective-service';
 import { ToolDefinition, ToolCall } from '../adapters/ai-adapter';
+import { TaskPlan, PlanStep } from '../controllers/reason';
 
 export interface OrchestratorContext {
   identity_anchor: string;
@@ -178,6 +179,91 @@ User: ${queryText}
       reflectiveResult,
       toolCalls: candidate.toolCalls
     };
+  }
+
+  async generatePlan(req: OrchestratorRequest, tools: ToolDefinition[]): Promise<TaskPlan> {
+    const { identity_anchor, messages } = req;
+    const queryText = messages.map((m: any) => m.content).join(' ');
+
+    const provider = await this.providerRegistry.pick({ requireToolUse: true });
+    if (!provider.generateWithTools) {
+      throw new Error('Provider does not support tool use');
+    }
+
+    const planPrompt = `You are a task planner. Given a user request and available tools, create a step-by-step plan to fulfill the request.
+
+Available tools:
+${JSON.stringify(tools.map(t => ({ name: t.name, description: t.description, parameters: t.parameters })), null, 2)}
+
+User request: "${queryText}"
+
+Respond with a JSON object in this exact format:
+{
+  "description": "Brief description of the plan",
+  "estimatedSteps": <number>,
+  "steps": [
+    {
+      "stepNumber": 1,
+      "tool": "tool_name",
+      "args": { "param1": "value1" },
+      "expectedResult": "Description of expected result"
+    }
+  ]
+}
+
+Provide ONLY the JSON object, no markdown formatting, no additional text.`;
+
+    const candidate = await provider.generateWithTools({
+      model: 'gemini-1.5-pro',
+      prompt: planPrompt,
+      maxTokens: req.maxTokens || 1024,
+      temperature: req.temperature || 0.2
+    }, []);
+
+    const responseText = candidate.text || '';
+    let plan: TaskPlan;
+
+    try {
+      // Try to extract JSON from the response
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      const jsonStr = jsonMatch ? jsonMatch[0] : responseText;
+      const parsed = JSON.parse(jsonStr);
+      
+      if (!parsed.steps || !Array.isArray(parsed.steps)) {
+        throw new Error('Invalid plan: missing steps array');
+      }
+
+      const steps: PlanStep[] = parsed.steps.map((s: any, index: number) => ({
+        stepNumber: s.stepNumber || index + 1,
+        tool: s.tool || s.name || '',
+        args: s.args || s.arguments || {},
+        expectedResult: s.expectedResult || s.description || '',
+        status: 'pending',
+        retryCount: 0
+      }));
+
+      plan = {
+        steps,
+        description: parsed.description || `Plan for: ${queryText}`,
+        estimatedSteps: parsed.estimatedSteps || steps.length
+      };
+    } catch (error) {
+      // Fallback: create a simple single-step plan
+      plan = {
+        steps: [{
+          stepNumber: 1,
+          tool: tools[0]?.name || 'unknown',
+          args: { query: queryText },
+          expectedResult: 'Execute query',
+          status: 'pending',
+          retryCount: 0
+        }],
+        description: `Fallback plan for: ${queryText}`,
+        estimatedSteps: 1
+      };
+    }
+
+    return plan;
   }
 }
 

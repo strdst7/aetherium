@@ -32,6 +32,11 @@ describe("AgentBuilder", () => {
         },
         toolCalls: [],
       }),
+      generatePlan: jest.fn().mockResolvedValue({
+        description: "Test plan",
+        estimatedSteps: 1,
+        steps: [],
+      }),
     } as any;
 
     mockMCPClient = {
@@ -126,6 +131,98 @@ describe("AgentBuilder", () => {
     it("should stop MCP client", async () => {
       await agentBuilder.shutdown();
       expect(mockMCPClient.stop).toHaveBeenCalled();
+    });
+  });
+
+  describe("executeTask", () => {
+    it("should generate a plan and execute all steps successfully", async () => {
+      mockOrchestrator.generatePlan.mockResolvedValue({
+        description: "Test plan",
+        estimatedSteps: 2,
+        steps: [
+          { stepNumber: 1, tool: "query", args: { status: "inactive" }, expectedResult: "Users", status: "pending", retryCount: 0 },
+          { stepNumber: 2, tool: "update", args: { status: "active" }, expectedResult: "Update", status: "pending", retryCount: 0 },
+        ],
+      });
+
+      mockMCPClient.executeTool.mockResolvedValue({ success: true, data: [{ id: "1", name: "Alice" }] });
+
+      const req: ReasonRequest = {
+        identity_anchor: "test",
+        messages: [{ role: "user", content: "Find inactive users and update their status" }],
+      };
+
+      const result = await agentBuilder.executeTask(req, { maxTaskIterations: 10 });
+
+      expect(result.response.plan).toBeDefined();
+      expect(result.response.plan?.steps).toHaveLength(2);
+      expect(result.response.planStatus).toBe("completed");
+      expect(result.response.actions).toHaveLength(2);
+      expect(result.toolCalls).toHaveLength(2);
+    });
+
+    it("should handle failed steps and retry once", async () => {
+      mockOrchestrator.generatePlan.mockResolvedValue({
+        description: "Test plan",
+        estimatedSteps: 1,
+        steps: [
+          { stepNumber: 1, tool: "query", args: {}, expectedResult: "Result", status: "pending", retryCount: 0 },
+        ],
+      });
+
+      mockMCPClient.executeTool
+        .mockRejectedValueOnce(new Error("Connection failed"))
+        .mockResolvedValueOnce({ success: true, data: "result" });
+
+      const req: ReasonRequest = {
+        identity_anchor: "test",
+        messages: [{ role: "user", content: "Do something" }],
+      };
+
+      const result = await agentBuilder.executeTask(req);
+
+      expect(result.response.planStatus).toBe("completed");
+      expect(mockMCPClient.executeTool).toHaveBeenCalledTimes(2);
+    });
+
+    it("should handle plan generation errors gracefully", async () => {
+      mockOrchestrator.generatePlan.mockRejectedValue(new Error("Plan generation failed"));
+
+      const req: ReasonRequest = {
+        identity_anchor: "test",
+        messages: [{ role: "user", content: "Do something" }],
+      };
+
+      const result = await agentBuilder.executeTask(req);
+
+      expect(result.response.status).toBe("reject");
+      expect(result.response.metadata.error).toContain("Plan generation failed");
+    });
+
+    it("should limit iterations to maxTaskIterations", async () => {
+      mockOrchestrator.generatePlan.mockResolvedValue({
+        description: "Test plan",
+        estimatedSteps: 5,
+        steps: [
+          { stepNumber: 1, tool: "query", args: {}, status: "pending", retryCount: 0 },
+          { stepNumber: 2, tool: "query", args: {}, status: "pending", retryCount: 0 },
+          { stepNumber: 3, tool: "query", args: {}, status: "pending", retryCount: 0 },
+          { stepNumber: 4, tool: "query", args: {}, status: "pending", retryCount: 0 },
+          { stepNumber: 5, tool: "query", args: {}, status: "pending", retryCount: 0 },
+        ],
+      });
+
+      mockMCPClient.executeTool.mockResolvedValue({ success: true, data: [] });
+
+      const req: ReasonRequest = {
+        identity_anchor: "test",
+        messages: [{ role: "user", content: "Do something" }],
+      };
+
+      const result = await agentBuilder.executeTask(req, { maxTaskIterations: 2 });
+
+      expect(result.toolCalls).toHaveLength(2);
+      expect(result.response.metadata.maxIterations).toBe(2);
     });
   });
 });

@@ -5,6 +5,7 @@ const fakeTools = [
   { name: "echo", description: "Echoes the input", parameters: { type: "object", properties: { message: { type: "string" } } } },
   { name: "add", description: "Adds two numbers", parameters: { type: "object", properties: { a: { type: "number" }, b: { type: "number" } } } },
   { name: "query", description: "Queries the database", parameters: { type: "object", properties: { collection: { type: "string" }, filter: { type: "object" } } } },
+  { name: "update", description: "Updates data in the database", parameters: { type: "object", properties: { collection: { type: "string" }, filter: { type: "object" }, update: { type: "object" } } } },
 ];
 
 const rl = readline.createInterface({
@@ -33,6 +34,8 @@ rl.on("line", (line) => {
         result = { success: true, data: args.a + args.b };
       } else if (name === "query") {
         result = { success: true, data: [{ id: "1", name: "test" }] };
+      } else if (name === "update") {
+        result = { success: true, data: { modifiedCount: 1, matchedCount: 1 } };
       } else {
         result = { success: false, error: `Unknown tool: ${name}` };
       }

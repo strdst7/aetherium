@@ -1,0 +1,577 @@
+openapi: 3.0.3
+info:
+  title: Aetherium API
+  description: |
+    Sovereign, identity-first AI intelligence platform.
+    Provides natural-language reasoning with optional tool use and multi-step task execution.
+  version: 1.0.0
+  contact:
+    name: Aetherium Team
+  license:
+    name: ISC
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+  - url: https://api.aetherium.io/v1
+    description: Production server
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      description: Returns the health status of the API service
+      operationId: healthCheck
+      tags:
+        - System
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /v1/info:
+    get:
+      summary: API information
+      description: Returns API version, capabilities, and available endpoints
+      operationId: getApiInfo
+      tags:
+        - System
+      responses:
+        '200':
+          description: API information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiInfoResponse'
+
+  /v1/reason:
+    post:
+      summary: Natural language reasoning
+      description: |
+        Submit a natural-language request for reasoning. Supports both tool-mode (single-step)
+        and task-mode (multi-step plan execution). Identity anchor ensures consistent outputs.
+      operationId: reason
+      tags:
+        - Reasoning
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+      responses:
+        '200':
+          description: Reasoning response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReasonResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: API version not supported
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+  /v1/memory/search:
+    post:
+      summary: Memory search
+      description: Search the memory vector store for relevant memories
+      operationId: memorySearch
+      tags:
+        - Memory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - query
+                - identity_anchor
+              properties:
+                query:
+                  type: string
+                  description: Search query text
+                identity_anchor:
+                  type: string
+                  description: Identity anchor for memory isolation
+                limit:
+                  type: integer
+                  default: 10
+                  description: Maximum number of results
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        doc:
+                          type: object
+                        score:
+                          type: number
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - timestamp
+      properties:
+        status:
+          type: string
+          enum: [ok, degraded, down]
+        timestamp:
+          type: string
+          format: date-time
+        version:
+          type: string
+          description: API version
+        uptime:
+          type: number
+          description: Server uptime in seconds
+        checks:
+          type: object
+          properties:
+            database:
+              type: string
+              enum: [ok, error]
+            llm:
+              type: string
+              enum: [ok, error]
+            mcp:
+              type: string
+              enum: [ok, error, unavailable]
+
+    ApiInfoResponse:
+      type: object
+      required:
+        - name
+        - version
+        - description
+      properties:
+        name:
+          type: string
+          example: Aetherium
+        version:
+          type: string
+          example: 1.0.0
+        description:
+          type: string
+        endpoints:
+          type: array
+          items:
+            type: object
+            properties:
+              path:
+                type: string
+              method:
+                type: string
+              description:
+                type: string
+        capabilities:
+          type: array
+          items:
+            type: string
+          example: [reasoning, tool-use, task-mode, memory, identity]
+
+    ReasonRequest:
+      type: object
+      required:
+        - identity_anchor
+        - messages
+      properties:
+        identity_anchor:
+          type: string
+          description: Unique identifier for consistent identity-based reasoning
+          example: "user-123"
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+          description: Conversation messages
+        options:
+          $ref: '#/components/schemas/ReasonOptions'
+
+    Message:
+      type: object
+      required:
+        - role
+        - content
+      properties:
+        role:
+          type: string
+          enum: [user, system, assistant]
+          description: Message role
+        content:
+          type: string
+          description: Message content
+
+    ReasonOptions:
+      type: object
+      properties:
+        maxTokens:
+          type: integer
+          minimum: 1
+          default: 512
+          description: Maximum tokens in response
+        temperature:
+          type: number
+          minimum: 0
+          maximum: 2
+          default: 0.7
+          description: Sampling temperature
+        policy:
+          type: object
+          description: Policy constraints for reasoning
+        memoryAlpha:
+          type: number
+          minimum: 0
+          maximum: 1
+          default: 0.5
+          description: Memory relevance threshold
+        memoryK:
+          type: integer
+          minimum: 1
+          default: 5
+          description: Number of memories to retrieve
+        skipReflection:
+          type: boolean
+          default: false
+          description: Skip reflective evaluation
+        enableTools:
+          type: boolean
+          default: false
+          description: Enable tool use
+        mode:
+          type: string
+          enum: [tool, task]
+          default: tool
+          description: Execution mode - tool (single-step) or task (multi-step)
+        maxToolIterations:
+          type: integer
+          minimum: 1
+          default: 5
+          description: Maximum tool iterations for tool mode
+        maxTaskIterations:
+          type: integer
+          minimum: 1
+          default: 20
+          description: Maximum task iterations for task mode
+
+    ReasonResponse:
+      type: object
+      required:
+        - id
+        - output
+        - status
+        - identity_anchor
+        - reasoning
+        - apiVersion
+      properties:
+        id:
+          type: string
+          description: Unique response identifier
+        output:
+          type: string
+          description: Generated text output
+        status:
+          type: string
+          enum: [approved, refine, reject]
+          description: Reflective evaluation status
+        identity_anchor:
+          type: string
+          description: Identity anchor from request
+        reasoning:
+          $ref: '#/components/schemas/ReasoningPayload'
+        toolCalls:
+          type: array
+          items:
+            $ref: '#/components/schemas/ToolCall'
+        toolResults:
+          type: array
+          items:
+            $ref: '#/components/schemas/ToolExecutionResult'
+        toolExecutionTrace:
+          type: array
+          items:
+            $ref: '#/components/schemas/ToolExecutionTrace'
+        plan:
+          $ref: '#/components/schemas/TaskPlan'
+        actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Action'
+        planStatus:
+          type: string
+          enum: [pending, in_progress, completed, partial, failed]
+        metadata:
+          type: object
+          properties:
+            processingTimeMs:
+              type: integer
+            version:
+              type: string
+            mode:
+              type: string
+              enum: [tool, task]
+        apiVersion:
+          type: string
+          description: API version that handled this request
+          example: "1.0.0"
+
+    ReasoningPayload:
+      type: object
+      required:
+        - orchestrator
+        - reflective
+        - trace
+      properties:
+        orchestrator:
+          type: object
+          required:
+            - selectedProvider
+            - relevantMemoriesCount
+            - topMemories
+          properties:
+            selectedProvider:
+              type: string
+            relevantMemoriesCount:
+              type: integer
+            topMemories:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  score:
+                    type: number
+                  excerpt:
+                    type: string
+        reflective:
+          $ref: '#/components/schemas/ReflectiveCheckResult'
+        trace:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReasoningTrace'
+
+    ReflectiveCheckResult:
+      type: object
+      required:
+        - status
+        - violations
+        - suggestedConstraints
+        - confidenceScore
+      properties:
+        status:
+          type: string
+          enum: [approved, refine, reject]
+        violations:
+          type: array
+          items:
+            type: object
+            properties:
+              rule:
+                type: string
+              severity:
+                type: string
+              message:
+                type: string
+        suggestedConstraints:
+          type: array
+          items:
+            type: string
+        confidenceScore:
+          type: number
+          minimum: 0
+          maximum: 1
+
+    ReasoningTrace:
+      type: object
+      required:
+        - stage
+        - timestamp
+        - details
+      properties:
+        stage:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        details:
+          type: object
+          additionalProperties: true
+
+    ToolCall:
+      type: object
+      required:
+        - id
+        - name
+        - arguments
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        arguments:
+          type: object
+          additionalProperties: true
+
+    ToolExecutionResult:
+      type: object
+      required:
+        - success
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          additionalProperties: true
+        error:
+          type: string
+
+    ToolExecutionTrace:
+      type: object
+      required:
+        - step
+        - toolCall
+        - result
+        - timestamp
+      properties:
+        step:
+          type: integer
+        toolCall:
+          $ref: '#/components/schemas/ToolCall'
+        result:
+          $ref: '#/components/schemas/ToolExecutionResult'
+        timestamp:
+          type: string
+          format: date-time
+
+    TaskPlan:
+      type: object
+      required:
+        - steps
+        - description
+        - estimatedSteps
+      properties:
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlanStep'
+        description:
+          type: string
+        estimatedSteps:
+          type: integer
+
+    PlanStep:
+      type: object
+      required:
+        - stepNumber
+        - tool
+        - args
+      properties:
+        stepNumber:
+          type: integer
+        tool:
+          type: string
+        args:
+          type: object
+          additionalProperties: true
+        expectedResult:
+          type: string
+        status:
+          type: string
+          enum: [pending, in_progress, completed, failed]
+        retryCount:
+          type: integer
+
+    Action:
+      type: object
+      required:
+        - type
+        - title
+        - data
+        - format
+      properties:
+        type:
+          type: string
+          enum: [report, update, trigger, notify]
+        title:
+          type: string
+        data:
+          type: object
+          additionalProperties: true
+        format:
+          type: string
+          enum: [json, string, markdown, html]
+
+    ProblemDetails:
+      type: object
+      required:
+        - type
+        - title
+        - status
+        - detail
+      properties:
+        type:
+          type: string
+          format: uri
+          description: A URI reference that identifies the problem type
+          default: "about:blank"
+        title:
+          type: string
+          description: A short, human-readable summary of the problem type
+        status:
+          type: integer
+          description: The HTTP status code
+        detail:
+          type: string
+          description: A human-readable explanation specific to this occurrence
+        instance:
+          type: string
+          format: uri
+          description: A URI reference that identifies the specific occurrence
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+              code:
+                type: string
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Bearer token for authentication
+
+security:
+  - bearerAuth: []

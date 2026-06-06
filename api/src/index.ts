@@ -11,6 +11,8 @@ import { createMultiAgentRouter } from "./controllers/multi-agent";
 import failoverRouter from "./controllers/failover";
 import { MCPClient } from "./services/mcp-client";
 import { AgentBuilder } from "./services/agent-builder";
+import { versionNegotiation, addVersionToResponse } from "./middleware/version-negotiation";
+import { errorHandler } from "./middleware/error-handler";
 
 const app = express();
 const PORT = process.env.API_PORT || 8080;
@@ -23,13 +25,17 @@ app.use("/", failoverRouter);
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, Accept-Version, X-API-Version");
   if (req.method === "OPTIONS") {
     res.sendStatus(200);
   } else {
     next();
   }
 });
+
+// Version negotiation middleware
+app.use(versionNegotiation);
+app.use(addVersionToResponse);
 
 // Health check
 app.get("/health", (req, res) => {
@@ -74,6 +80,7 @@ async function bootstrap() {
     const agentBuilder = new AgentBuilder(orchestrator, mcpClient, {
       enableTools: true,
       maxToolIterations: 5,
+      maxTaskIterations: 20,
     });
     await agentBuilder.initialize();
     console.log("✅ AgentBuilder initialized");
