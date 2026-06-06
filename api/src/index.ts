@@ -51,16 +51,31 @@ app.use(addVersionToResponse);
 
 // Initialize services
 async function bootstrap() {
+  const mongoUri = process.env.MONGODB_URI;
+  const isDemoMode = !mongoUri || mongoUri === "undefined";
+  
+  if (isDemoMode) {
+    console.log("⚠️  MONGODB_URI not found. Starting in LIVE DEMO mode with in-memory persistence.");
+  }
+
   try {
     // Initialize memory service
     const memoryService = new MemoryService();
-    await memoryService.connect(process.env.MONGODB_URI);
-    console.log("✅ Memory service connected");
+    if (!isDemoMode) {
+      await memoryService.connect(mongoUri);
+      console.log("✅ Memory service connected");
+    } else {
+      console.log("ℹ️  Memory service: using in-memory mock");
+    }
 
     // Initialize identity service
     const identityService = new IdentityService();
-    await identityService.connect(process.env.MONGODB_URI);
-    console.log("✅ Identity service connected");
+    if (!isDemoMode) {
+      await identityService.connect(mongoUri);
+      console.log("✅ Identity service connected");
+    } else {
+      console.log("ℹ️  Identity service: using in-memory mock");
+    }
 
     // Initialize identity binding service
     const identityBinding = new IdentityBindingService(identityService);
@@ -96,8 +111,12 @@ async function bootstrap() {
 
     // Initialize audit service
     const auditService = new AuditService();
-    await auditService.connect(process.env.MONGODB_URI);
-    console.log("✅ Audit service connected");
+    if (!isDemoMode) {
+      await auditService.connect(mongoUri);
+      console.log("✅ Audit service connected");
+    } else {
+      console.log("ℹ️  Audit service: using in-memory mock");
+    }
 
     // Initialize orchestrator (with identity binding, mythic module, sovereign halo, and audit service)
     const registry = ProviderRegistry.instance;
