@@ -1,65 +1,92 @@
 import { AIProvider } from "../adapters/ai-adapter";
 
-export interface ProviderConfig {
+export type ProviderEntry = {
   provider: AIProvider;
   priority: number;
-  tags: string[];
-}
-
-export type SelectionPolicy = "highest-priority" | "random" | "balanced" | string;
+  tags?: string[];
+};
 
 export class ProviderRegistry {
-  private providers: Map<string, ProviderConfig> = new Map();
+  private static _instance: ProviderRegistry;
+  private providers: ProviderEntry[] = [];
 
-  register(name: string, provider: AIProvider, priority: number = 0, tags: string[] = []): void {
-    this.providers.set(name, { provider, priority, tags });
+  private constructor() {}
+
+  static get instance(): ProviderRegistry {
+    if (!ProviderRegistry._instance) {
+      ProviderRegistry._instance = new ProviderRegistry();
+    }
+    return ProviderRegistry._instance;
   }
 
-  unregister(name: string): void {
-    this.providers.delete(name);
+  /**
+   * Resets the registry (useful for tests).
+   */
+  reset() {
+    this.providers = [];
   }
 
-  pick(policy: SelectionPolicy = "highest-priority"): AIProvider {
-    if (this.providers.size === 0) {
-      throw new Error("No providers registered");
+  /**
+   * Register a provider with a priority.
+   * Lower priority number = higher priority.
+   */
+  register(provider: AIProvider, priority = 10, tags: string[] = []) {
+    this.providers.push({ provider, priority, tags });
+    this.providers.sort((a, b) => a.priority - b.priority);
+  }
+
+  /**
+   * Returns the highest‑priority healthy provider.
+   * If all providers fail health checks, throws an error.
+   */
+  async pick(policy: { requireEmbeddings?: boolean; preferLocal?: boolean; requireToolUse?: boolean } = {}) {
+    let candidates = [...this.providers];
+
+    // Filter by embedding capability
+    if (policy.requireEmbeddings) {
+      candidates = candidates.filter((p) => p.provider.capabilities.supportsEmbeddings);
     }
 
-    const configs = Array.from(this.providers.values());
-
-    if (policy === "highest-priority") {
-      return configs.sort((a, b) => b.priority - a.priority)[0].provider;
+    // Filter by tool-use capability
+    if (policy.requireToolUse) {
+      candidates = candidates.filter((p) => p.provider.capabilities.supportsToolUse);
     }
 
-    if (policy === "random") {
-      return configs[Math.floor(Math.random() * configs.length)].provider;
+    // Filter by local preference
+    if (policy.preferLocal) {
+      const local = candidates.filter((p) => p.tags?.includes("local"));
+      if (local.length > 0) candidates = local;
     }
 
-    if (policy === "balanced") {
-      return configs[Math.floor(Math.random() * configs.length)].provider;
+    // Health check loop
+    for (const entry of candidates) {
+      try {
+        const health = await entry.provider.healthCheck?.();
+        if (!health || health.ok !== false) {
+          return entry.provider;
+        }
+      } catch {
+        // Provider unhealthy, continue to next
+      }
     }
 
-    // Default to highest priority if unknown policy
-    return configs.sort((a, b) => b.priority - a.priority)[0].provider;
+    throw new Error("No healthy providers available");
   }
 
-  pickByName(name: string): AIProvider | undefined {
-    return this.providers.get(name)?.provider;
+  /**
+   * Returns the first registered provider (used for embeddings).
+   */
+  get defaultProvider(): AIProvider {
+    return this.providers[0].provider;
   }
 
-  pickByTag(tag: string): AIProvider | undefined {
-    const candidates = Array.from(this.providers.values()).filter((c) =>
-      c.tags.includes(tag)
-    );
-    if (candidates.length === 0) return undefined;
-    return candidates.sort((a, b) => b.priority - a.priority)[0].provider;
-  }
-
-  list(): Array<{ name: string; provider: string; priority: number; tags: string[] }> {
-    return Array.from(this.providers.entries()).map(([name, config]) => ({
-      name,
-      provider: config.provider.name,
-      priority: config.priority,
-      tags: config.tags,
+  listProviders() {
+    return this.providers.map((p) => ({
+      name: p.provider.name,
+      priority: p.priority,
+      tags: p.tags,
     }));
   }
 }
+
+export const ProviderRegistryInstance = ProviderRegistry.instance;

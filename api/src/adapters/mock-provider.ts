@@ -1,5 +1,11 @@
 import { AIProvider, GenerateRequest, GenerateResponse } from "./ai-adapter";
 
+let FORCE_FAIL = false;
+
+export function setMockForceFail(v: boolean) {
+  FORCE_FAIL = v;
+}
+
 /**
  * Mock provider for testing without Ollama
  * Generates simple responses based on query keywords
@@ -9,6 +15,7 @@ export class MockProvider implements AIProvider {
   capabilities = {
     supportsStreaming: false,
     supportsEmbeddings: true,
+    supportsToolUse: false,
     maxTokens: 512,
   };
 
@@ -22,6 +29,10 @@ export class MockProvider implements AIProvider {
   };
 
   async generate(req: GenerateRequest): Promise<GenerateResponse> {
+    if (FORCE_FAIL) {
+      throw new Error("Simulated mock provider failure");
+    }
+
     const { model, messages = [], maxTokens = 512 } = req;
 
     // Extract query from messages
@@ -50,6 +61,10 @@ export class MockProvider implements AIProvider {
   }
 
   async embed(input: string | string[]): Promise<{ embeddings: number[] | number[][] }> {
+    if (FORCE_FAIL) {
+      throw new Error("Simulated mock embedding failure");
+    }
+
     const inputs = Array.isArray(input) ? input : [input];
     const embeddings = inputs.map((text) => this.localEmbedding(text));
 
@@ -59,6 +74,9 @@ export class MockProvider implements AIProvider {
   }
 
   async healthCheck(): Promise<{ ok: boolean; info?: any }> {
+    if (FORCE_FAIL) {
+      return { ok: false, info: "Forced mock failure" };
+    }
     return {
       ok: true,
       info: { provider: "mock", status: "healthy" },
@@ -77,9 +95,12 @@ export class MockProvider implements AIProvider {
     if (lower.includes("arbiter") || lower.includes("sangheili")) {
       return this.mockResponses.arbiter;
     }
+    if (lower.includes("halo")) {
+      return this.mockResponses.halo;
+    }
 
-    // Default to Halo info
-    return this.mockResponses.halo;
+    // Default to fallback response
+    return "Fallback provider response (identity preserved).";
   }
 
   private localEmbedding(text: string): number[] {

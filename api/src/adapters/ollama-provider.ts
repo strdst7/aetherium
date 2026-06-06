@@ -1,10 +1,17 @@
 import { AIProvider, GenerateRequest, GenerateResponse } from "./ai-adapter";
 
+let FORCE_FAIL = false;
+
+export function setForceFail(v: boolean) {
+  FORCE_FAIL = v;
+}
+
 export class OllamaProvider implements AIProvider {
   name = "ollama";
   capabilities = {
     supportsStreaming: false,
     supportsEmbeddings: true,
+    supportsToolUse: false,
     maxTokens: 4096,
   };
 
@@ -15,6 +22,10 @@ export class OllamaProvider implements AIProvider {
   }
 
   async generate(req: GenerateRequest): Promise<GenerateResponse> {
+    if (FORCE_FAIL) {
+      throw new Error("Simulated Ollama provider failure");
+    }
+
     const { model, prompt, messages, maxTokens = 512, temperature = 0.7 } = req;
 
     let text = prompt || "";
@@ -55,6 +66,10 @@ export class OllamaProvider implements AIProvider {
   }
 
   async embed(input: string | string[]): Promise<{ embeddings: number[] | number[][] }> {
+    if (FORCE_FAIL) {
+      throw new Error("Simulated Ollama embedding failure");
+    }
+
     const inputs = Array.isArray(input) ? input : [input];
 
     try {
@@ -100,6 +115,10 @@ export class OllamaProvider implements AIProvider {
   }
 
   async healthCheck(): Promise<{ ok: boolean; info?: any }> {
+    if (FORCE_FAIL) {
+      return { ok: false, info: "Forced failure (simulated)" };
+    }
+
     try {
       const response = await fetch(`${this.baseUrl}/api/tags`);
       if (response.ok) {
