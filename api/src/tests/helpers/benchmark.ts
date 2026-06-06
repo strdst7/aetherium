@@ -110,9 +110,23 @@ export class BenchmarkRunner {
     max: number;
     stdDev: number;
   } {
+    const count = this.measurements.length;
+    if (count === 0) {
+      return {
+        label: this.label,
+        count: 0,
+        min: NaN,
+        mean: NaN,
+        p50: NaN,
+        p95: NaN,
+        p99: NaN,
+        max: NaN,
+        stdDev: NaN,
+      };
+    }
     return {
       label: this.label,
-      count: this.measurements.length,
+      count,
       min: this.getMin(),
       mean: this.getMean(),
       p50: this.getP50(),
