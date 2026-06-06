@@ -13,6 +13,8 @@ import { MCPClient } from "./services/mcp-client";
 import { AgentBuilder } from "./services/agent-builder";
 import { versionNegotiation, addVersionToResponse } from "./middleware/version-negotiation";
 import { errorHandler } from "./middleware/error-handler";
+import { createDocsRouter } from "./routes/docs";
+import { createHealthRouter } from "./routes/health";
 
 const app = express();
 const PORT = process.env.API_PORT || 8080;
@@ -112,6 +114,21 @@ async function bootstrap() {
         });
       }
     });
+
+    // Register health and API info endpoints
+    app.use("/", createHealthRouter({
+      memoryService,
+      providerRegistry: registry,
+      mcpClient,
+    }));
+    console.log("✅ Health and info routes registered");
+
+    // Register documentation routes
+    app.use("/", createDocsRouter());
+    console.log("✅ Documentation routes registered");
+
+    // Error handling middleware (must be last)
+    app.use(errorHandler);
 
     // Graceful shutdown
     process.on("SIGTERM", async () => {

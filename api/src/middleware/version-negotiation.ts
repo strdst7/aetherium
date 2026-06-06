@@ -8,7 +8,7 @@ export interface VersionedRequest extends Request {
 /**
  * Supported API versions in order of preference (most recent first).
  */
-const SUPPORTED_VERSIONS = [CURRENT_API_VERSION];
+const SUPPORTED_VERSIONS: string[] = [CURRENT_API_VERSION];
 
 /**
  * Version negotiation middleware.

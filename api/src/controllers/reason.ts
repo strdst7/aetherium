@@ -82,6 +82,7 @@ export interface ReasonResponse {
   actions?: Action[];
   planStatus?: PlanStatus;
   metadata?: any;
+  apiVersion?: string;
 }
 
 export class ReasonController {
