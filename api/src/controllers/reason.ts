@@ -1,5 +1,8 @@
 import { Orchestrator, OrchestratorRequest, OrchestratorResponse } from "../services/orchestrator";
 import { ReflectiveService, ReflectiveCheckResult } from "../services/reflective-service";
+import { AgentBuilder } from "../services/agent-builder";
+import { ToolCall } from "../adapters/ai-adapter";
+import { ToolExecutionResult } from "../services/mcp-client";
 
 export interface ReasonRequest {
   identity_anchor: string;
@@ -7,10 +10,11 @@ export interface ReasonRequest {
   options?: {
     maxTokens?: number;
     temperature?: number;
-    policy?: string;
+    policy?: any;
     memoryAlpha?: number;
     memoryK?: number;
     skipReflection?: boolean;
+    enableTools?: boolean;
   };
 }
 
@@ -18,6 +22,13 @@ export interface ReasoningTrace {
   stage: string;
   timestamp: string;
   details: any;
+}
+
+export interface ToolExecutionTrace {
+  step: number;
+  toolCall: ToolCall;
+  result: ToolExecutionResult;
+  timestamp: string;
 }
 
 export interface ReasonResponse {
@@ -34,16 +45,21 @@ export interface ReasonResponse {
     reflective: ReflectiveCheckResult;
     trace: ReasoningTrace[];
   };
+  toolCalls?: ToolCall[];
+  toolResults?: ToolExecutionResult[];
+  toolExecutionTrace?: ToolExecutionTrace[];
   metadata?: any;
 }
 
 export class ReasonController {
   private orchestrator: Orchestrator;
   private reflectiveService: ReflectiveService;
+  private agentBuilder?: AgentBuilder;
 
-  constructor(orchestrator: Orchestrator, reflectiveService: ReflectiveService) {
+  constructor(orchestrator: Orchestrator, reflectiveService: ReflectiveService, agentBuilder?: AgentBuilder) {
     this.orchestrator = orchestrator;
     this.reflectiveService = reflectiveService;
+    this.agentBuilder = agentBuilder;
   }
 
   async handleReason(req: ReasonRequest): Promise<ReasonResponse> {
@@ -65,7 +81,7 @@ export class ReasonController {
         stage: "orchestrator_start",
         timestamp: new Date().toISOString(),
         details: {
-          policy: req.options?.policy || "highest-priority",
+          policy: req.options?.policy || {},
           memoryK: req.options?.memoryK || 5,
         },
       });
@@ -75,12 +91,57 @@ export class ReasonController {
         messages: req.messages,
         maxTokens: req.options?.maxTokens || 512,
         temperature: req.options?.temperature || 0.7,
-        policy: req.options?.policy as any,
+        policy: typeof req.options?.policy === 'object' ? req.options.policy : {},
         memoryAlpha: req.options?.memoryAlpha || 0.5,
         memoryK: req.options?.memoryK || 5,
       };
 
-      const orchestratorResponse = await this.orchestrator.process(orchestratorReq);
+      let orchestratorResponse: OrchestratorResponse;
+      let toolCalls: ToolCall[] | undefined;
+      let toolResults: ToolExecutionResult[] | undefined;
+      let toolExecutionTrace: ToolExecutionTrace[] | undefined;
+
+      // Use AgentBuilder when enableTools is true
+      if (req.options?.enableTools && this.agentBuilder) {
+        trace.push({
+          stage: "agent_builder_start",
+          timestamp: new Date().toISOString(),
+          details: { enableTools: true },
+        });
+
+        const agentResult = await this.agentBuilder.execute(req, {
+          enableTools: true,
+          maxToolIterations: 5,
+        });
+
+        orchestratorResponse = {
+          id: agentResult.response.id,
+          text: agentResult.response.output,
+          context: {
+            identity_anchor: req.identity_anchor,
+            queryEmbedding: [],
+            relevantMemories: [],
+            systemPrompt: "",
+            fullPrompt: "",
+            selectedProvider: agentResult.response.reasoning.orchestrator.selectedProvider,
+          },
+          reflectiveResult: agentResult.response.reasoning.reflective,
+        };
+        toolCalls = agentResult.toolCalls;
+        toolResults = agentResult.toolResults;
+        toolExecutionTrace = agentResult.toolExecutionTrace;
+
+        trace.push({
+          stage: "agent_builder_complete",
+          timestamp: new Date().toISOString(),
+          details: {
+            selectedProvider: agentResult.response.reasoning.orchestrator.selectedProvider,
+            toolCallsCount: toolCalls?.length || 0,
+          },
+        });
+      } else {
+        orchestratorResponse = await this.orchestrator.process(orchestratorReq);
+      }
 
       trace.push({
         stage: "orchestrator_complete",
@@ -145,6 +206,9 @@ export class ReasonController {
           reflective: reflectiveResult,
           trace,
         },
+        toolCalls,
+        toolResults,
+        toolExecutionTrace,
         metadata: {
           processingTimeMs: Date.now() - startTime,
           version: "1.0",
@@ -209,9 +273,10 @@ export class ReasonController {
 // Express middleware factory
 export function createReasonRouter(
   orchestrator: Orchestrator,
-  reflectiveService: ReflectiveService
+  reflectiveService: ReflectiveService,
+  agentBuilder?: AgentBuilder
 ) {
-  const controller = new ReasonController(orchestrator, reflectiveService);
+  const controller = new ReasonController(orchestrator, reflectiveService, agentBuilder);
 
   return async (req: any, res: any, next: any) => {
     try {

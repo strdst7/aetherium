@@ -1,17 +1,23 @@
 import express from "express";
 import { MemoryService } from "./services/memory-service";
 import { ProviderRegistry } from "./services/provider-registry";
-import { OllamaProvider } from "./adapters/ollama-provider";
-import { MockProvider } from "./adapters/mock-provider";
 import { Orchestrator } from "./services/orchestrator";
 import { ReflectiveService } from "./services/reflective-service";
 import { ReasonController } from "./controllers/reason";
+import { registerProviders } from "./bootstrap/providers";
+import { createMemoryRouter } from "./controllers/memory";
+import { MultiAgentOrchestrator } from "./services/multi-agent-orchestrator";
+import { createMultiAgentRouter } from "./controllers/multi-agent";
+import failoverRouter from "./controllers/failover";
+import { MCPClient } from "./services/mcp-client";
+import { AgentBuilder } from "./services/agent-builder";
 
 const app = express();
 const PORT = process.env.API_PORT || 8080;
 
 // Middleware
 app.use(express.json());
+app.use("/", failoverRouter);
 
 // CORS
 app.use((req, res, next) => {
@@ -38,23 +44,16 @@ async function bootstrap() {
     await memoryService.connect(process.env.MONGODB_URI);
     console.log("✅ Memory service connected");
 
-    // Initialize provider registry
-    const registry = new ProviderRegistry();
-    
-    // Health check Ollama first
-    const ollamaProvider = new OllamaProvider(process.env.OLLAMA_URL);
+    // Initialize provider registry via bootstrap
+    const { geminiProvider, ollamaProvider } = await registerProviders();
     const ollamaHealth = await ollamaProvider.healthCheck();
+    const geminiHealth = await geminiProvider.healthCheck();
+    console.log(`🔮 Gemini provider health: ${geminiHealth.ok ? "healthy" : "unavailable (API key may be missing)"}`);
     console.log(`⚠️  Ollama provider health: ${ollamaHealth.ok ? "healthy" : "unavailable (using mock fallback)"}`);
-
-    // Register providers - use mock as primary, Ollama as secondary
-    const mockProvider = new MockProvider();
-    registry.register("mock", mockProvider, ollamaHealth.ok ? 50 : 100, ["embeddings"]);
-    console.log("✅ Mock provider registered");
-    
-    registry.register("ollama", ollamaProvider, ollamaHealth.ok ? 100 : 0, ["embeddings"]);
-    console.log("✅ Ollama provider registered");
+    console.log("✅ Providers registered");
 
     // Initialize orchestrator
+    const registry = ProviderRegistry.instance;
     const orchestrator = new Orchestrator(memoryService, registry);
     console.log("✅ Orchestrator initialized");
 
@@ -62,8 +61,38 @@ async function bootstrap() {
     const reflectiveService = new ReflectiveService();
     console.log("✅ Reflective service initialized");
 
+    // Initialize MCP client
+    const mcpClient = new MCPClient(process.env.MCP_SERVER_PATH);
+    try {
+      await mcpClient.start();
+      console.log("✅ MCP client connected");
+    } catch (error) {
+      console.warn("⚠️ MCP client failed to start:", error instanceof Error ? error.message : String(error));
+    }
+
+    // Initialize AgentBuilder
+    const agentBuilder = new AgentBuilder(orchestrator, mcpClient, {
+      enableTools: true,
+      maxToolIterations: 5,
+    });
+    await agentBuilder.initialize();
+    console.log("✅ AgentBuilder initialized");
+
+    // Log MCP server status
+    const mcpHealth = mcpClient.isHealthy();
+    console.log(`🔧 MCP server: ${mcpHealth ? "connected" : "unavailable (tool-use disabled)"}`);
+
+    // Register memory visualization endpoints
+    app.use("/", createMemoryRouter(memoryService));
+    console.log("✅ Memory visualization routes registered");
+
+    // Initialize multi-agent orchestrator
+    const multiAgentOrchestrator = new MultiAgentOrchestrator(memoryService, reflectiveService);
+    app.use("/", createMultiAgentRouter(multiAgentOrchestrator));
+    console.log("✅ Multi-agent routes registered");
+
     // Register reason endpoint
-    const reasonController = new ReasonController(orchestrator, reflectiveService);
+    const reasonController = new ReasonController(orchestrator, reflectiveService, agentBuilder);
     app.post("/v1/reason", async (req, res) => {
       try {
         const response = await reasonController.handleReason(req.body);
@@ -75,6 +104,13 @@ async function bootstrap() {
           timestamp: new Date().toISOString(),
         });
       }
+    });
+
+    // Graceful shutdown
+    process.on("SIGTERM", async () => {
+      console.log("Shutting down gracefully...");
+      await mcpClient.stop();
+      process.exit(0);
     });
 
     // Start server

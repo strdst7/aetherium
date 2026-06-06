@@ -1,16 +1,7 @@
-import { AIProvider, GenerateRequest, GenerateResponse } from "../adapters/ai-adapter";
-import { ProviderRegistry, SelectionPolicy } from "./provider-registry";
-import { MemoryService, MemoryDocument, VectorSearchResult } from "./memory-service";
-
-export interface OrchestratorRequest {
-  identity_anchor: string;
-  messages: Array<{ role: string; content: string }>;
-  maxTokens?: number;
-  temperature?: number;
-  policy?: SelectionPolicy;
-  memoryAlpha?: number;
-  memoryK?: number;
-}
+import { ProviderRegistry } from './provider-registry';
+import { MemoryService, VectorSearchResult } from './memory-service';
+import { ReflectiveService } from './reflective-service';
+import { ToolDefinition, ToolCall } from '../adapters/ai-adapter';
 
 export interface OrchestratorContext {
   identity_anchor: string;
@@ -19,185 +10,197 @@ export interface OrchestratorContext {
   systemPrompt: string;
   fullPrompt: string;
   selectedProvider: string;
+  toolExecutionTrace?: any[];
+}
+
+export interface OrchestratorRequest {
+  identity_anchor: string;
+  messages: Array<{ role: string; content: string }>;
+  maxTokens?: number;
+  temperature?: number;
+  policy?: { requireEmbeddings?: boolean; preferLocal?: boolean; requireToolUse?: boolean };
+  memoryAlpha?: number;
+  memoryK?: number;
 }
 
 export interface OrchestratorResponse {
   id: string;
   text: string;
-  usage?: any;
   context: OrchestratorContext;
-  reasoningTrace?: any;
+  reflectiveResult?: any;
+  refinedCandidate?: any;
+  toolCalls?: ToolCall[];
 }
 
 export class Orchestrator {
   private memoryService: MemoryService;
   private providerRegistry: ProviderRegistry;
-  private systemPrompt: string;
+  private reflectiveService: ReflectiveService;
 
-  constructor(
-    memoryService: MemoryService,
-    providerRegistry: ProviderRegistry,
-    systemPrompt?: string
-  ) {
+  constructor(memoryService: MemoryService, providerRegistry: ProviderRegistry) {
     this.memoryService = memoryService;
     this.providerRegistry = providerRegistry;
-    this.systemPrompt =
-      systemPrompt ||
-      `You are an intelligent assistant with access to a knowledge base. 
-Use the provided context memories to inform your response. 
-Be concise, accurate, and grounded in the available information.`;
+    this.reflectiveService = new ReflectiveService();
   }
 
   async process(req: OrchestratorRequest): Promise<OrchestratorResponse> {
-    const {
-      identity_anchor,
-      messages,
-      maxTokens = 512,
-      temperature = 0.7,
-      policy = "highest-priority",
-      memoryAlpha = 0.5,
-      memoryK = 5,
-    } = req;
+    const { identity_anchor, messages, policy = {}, memoryAlpha = 0.5, memoryK = 5 } = req;
+    const queryText = messages.map((m: any) => m.content).join(' ');
 
-    // Step 1: Compute query embedding
-    const queryEmbedding = await this.computeQueryEmbedding(messages);
-
-    // Step 2: Search memory for relevant documents
-    const relevantMemories = await this.memoryService.vectorSearch(
-      queryEmbedding,
-      memoryAlpha,
-      memoryK
-    );
-
-    // Step 2b: Also fetch documents by sigil (identity anchor)
-    if (identity_anchor) {
-      const sigilMemories = await this.memoryService.searchByMetadata({ sigil: identity_anchor });
-      for (const doc of sigilMemories) {
-        if (!relevantMemories.some(m => m.doc.id === doc.id)) {
-          relevantMemories.push({ doc, score: 1.0 }); // Full score for direct sigil match
-        }
-      }
+    // Step 1: compute embedding
+    const provider = await this.providerRegistry.pick({ ...policy, requireEmbeddings: true });
+    let embedding: number[] = [0];
+    if (provider.embed) {
+      const embedResult = await provider.embed(queryText);
+      embedding = Array.isArray(embedResult.embeddings[0]) 
+        ? (embedResult.embeddings[0] as number[]) 
+        : (embedResult.embeddings as number[]);
     }
 
-    // Step 3: Build prompt with context
-    const { systemPrompt, fullPrompt } = this.buildPrompt(
-      identity_anchor,
-      relevantMemories,
-      messages
-    );
+    // Step 2: memory retrieval
+    const memories = await this.memoryService.vectorSearch(embedding, memoryAlpha, memoryK);
 
-    // Step 4: Select provider
-    const provider = this.providerRegistry.pick(policy);
-    const providerName = provider.name;
+    // Step 3: build prompt
+    const systemPrompt = 'System: You are Aetherium, preserve identity fidelity.';
+    const prompt = `${systemPrompt}\nMemories:\n${JSON.stringify(memories)}\nUser:\n${queryText}`;
 
-    // Step 5: Generate candidate response
-    const generateReq: GenerateRequest = {
-      model: "default", // Will be overridden by provider
-      messages: [
-        { role: "system", content: systemPrompt },
-        ...relevantMemories.map((m) => ({
-          role: "assistant",
-          content: `[Memory: ${m.doc.id}] ${(m.doc.content || (m.doc as any).note || "").substring(0, 200)}...`,
-        })),
-        ...messages,
-      ],
-      maxTokens,
-      temperature,
-    };
+    // Step 4: generate candidate
+    const candidate = await provider.generate({ 
+      model: 'demo', 
+      prompt,
+      maxTokens: req.maxTokens,
+      temperature: req.temperature
+    });
+    const responseText = candidate.text || (candidate.choices && candidate.choices[0]?.message?.content) || '';
 
-    let response: any;
-    try {
-      response = await provider.generate(generateReq);
-    } catch (error) {
-      // Fallback to mock provider if generation fails
-      console.warn(`Generation failed with ${provider.name}, falling back to mock provider`);
-      const mockProvider = this.providerRegistry.pickByName("mock");
-      if (!mockProvider) {
-        throw new Error("Generation failed and no fallback provider available");
-      }
-      response = await mockProvider.generate(generateReq);
-    }
-
-    // Step 6: Build context for reflective layer
     const context: OrchestratorContext = {
       identity_anchor,
-      queryEmbedding,
-      relevantMemories,
+      queryEmbedding: embedding,
+      relevantMemories: memories,
       systemPrompt,
-      fullPrompt,
-      selectedProvider: providerName,
+      fullPrompt: prompt,
+      selectedProvider: provider.name
     };
 
-    // Step 7: Return response with context for reflective layer
+    // 7. Reflective Layer evaluation
+    const reflectiveResult = this.reflectiveService.evaluate({ text: responseText }, memories);
+
+    // 8. If refine, re‑generate with constraints
+    if (reflectiveResult.status === "refine") {
+      const constraints = reflectiveResult.violations
+        .map(v => `- ${v.message}`)
+        .join("\n");
+
+      const constrainedPrompt = `
+System: You are Aetherium. Preserve identity fidelity.
+Constraints:
+${constraints}
+
+Memories: ${JSON.stringify(memories)}
+User: ${queryText}
+      `;
+
+      const refined = await provider.generate({
+        model: "demo",
+        prompt: constrainedPrompt,
+        maxTokens: req.maxTokens || 200,
+        temperature: req.temperature || 0.2
+      });
+
+      return {
+        id: candidate.id || `res_${Date.now()}`,
+        text: responseText,
+        context,
+        reflectiveResult,
+        refinedCandidate: refined
+      };
+    }
+
     return {
-      id: response.id,
-      text: response.text || (response.choices?.[0]?.message?.content ?? ""),
-      usage: response.usage,
+      id: candidate.id || `res_${Date.now()}`,
+      text: responseText,
       context,
-      reasoningTrace: response.reasoningTrace,
+      reflectiveResult
     };
   }
 
-  private async computeQueryEmbedding(
-    messages: Array<{ role: string; content: string }>
-  ): Promise<number[]> {
-    // Combine all user messages into a single query
-    const queryText = messages
-      .filter((m) => m.role === "user")
-      .map((m) => m.content)
-      .join(" ");
+  async processWithTools(req: OrchestratorRequest, tools: ToolDefinition[]): Promise<OrchestratorResponse> {
+    const { identity_anchor, messages, policy = {}, memoryAlpha = 0.5, memoryK = 5 } = req;
+    const queryText = messages.map((m: any) => m.content).join(' ');
 
-    if (!queryText) {
-      throw new Error("No user messages provided");
+    // Step 1: compute embedding
+    const provider = await this.providerRegistry.pick({ ...policy, requireEmbeddings: true, requireToolUse: true });
+    let embedding: number[] = [0];
+    if (provider.embed) {
+      const embedResult = await provider.embed(queryText);
+      embedding = Array.isArray(embedResult.embeddings[0]) 
+        ? (embedResult.embeddings[0] as number[]) 
+        : (embedResult.embeddings as number[]);
     }
 
-    // Try to get embeddings from a provider that supports it
-    const provider = this.providerRegistry.pickByTag("embeddings");
+    // Step 2: memory retrieval
+    const memories = await this.memoryService.vectorSearch(embedding, memoryAlpha, memoryK);
 
-    if (provider && provider.embed) {
-      const result = await provider.embed(queryText);
-      return Array.isArray(result.embeddings[0])
-        ? (result.embeddings[0] as number[])
-        : (result.embeddings as number[]);
+    // Step 3: build prompt
+    const systemPrompt = 'System: You are Aetherium, preserve identity fidelity.';
+    const prompt = `${systemPrompt}\nMemories:\n${JSON.stringify(memories)}\nUser:\n${queryText}`;
+
+    // Step 4: generate with tools
+    if (!provider.generateWithTools) {
+      throw new Error('Provider does not support tool use');
     }
 
-    // Fallback: local embedding function
-    return this.localEmbedding(queryText);
+    const candidate = await provider.generateWithTools({
+      model: 'gemini-1.5-pro',
+      prompt,
+      maxTokens: req.maxTokens,
+      temperature: req.temperature
+    }, tools);
+
+    const responseText = candidate.text || '';
+
+    const context: OrchestratorContext = {
+      identity_anchor,
+      queryEmbedding: embedding,
+      relevantMemories: memories,
+      systemPrompt,
+      fullPrompt: prompt,
+      selectedProvider: provider.name
+    };
+
+    // Step 5: Reflective evaluation
+    const reflectiveResult = this.reflectiveService.evaluate({ text: responseText }, memories);
+
+    return {
+      id: candidate.id || `res_${Date.now()}`,
+      text: responseText,
+      context,
+      reflectiveResult,
+      toolCalls: candidate.toolCalls
+    };
   }
+}
 
-  private localEmbedding(text: string): number[] {
-    // Simple hash-based embedding for prototyping
-    const hash = text.split("").reduce((h, c) => h + c.charCodeAt(0), 0) % 1000;
-    return Array.from({ length: 128 }, (_, i) => (hash + i) / 1000);
-  }
+// Keep legacy function for compatibility if needed
+export async function orchestrateReasoning(req: any) {
+  const registry = ProviderRegistry.instance;
+  const memoryService = new MemoryService();
+  const orchestrator = new Orchestrator(memoryService, registry);
+  
+  const response = await orchestrator.process({
+    identity_anchor: req.identity_anchor,
+    messages: req.messages,
+    policy: typeof req.options?.policy === 'object' ? req.options.policy : {},
+    memoryAlpha: req.options?.alpha,
+    memoryK: 5,
+    maxTokens: req.options?.maxTokens,
+    temperature: req.options?.temperature
+  });
 
-  private buildPrompt(
-    identity_anchor: string,
-    relevantMemories: VectorSearchResult[],
-    messages: Array<{ role: string; content: string }>
-  ): { systemPrompt: string; fullPrompt: string } {
-    const systemPrompt = `${this.systemPrompt}
-
-Identity Anchor: ${identity_anchor}
-
-Relevant Context from Memory:
-${relevantMemories
-  .map(
-    (m, i) =>
-      `${i + 1}. [${m.doc.id} - Score: ${m.score.toFixed(2)}]\n${m.doc.content || (m.doc as any).note || JSON.stringify(m.doc)}`
-  )
-  .join("\n\n")}`;
-
-    const userMessages = messages
-      .map((m) => `${m.role.toUpperCase()}: ${m.content}`)
-      .join("\n");
-
-    const fullPrompt = `${systemPrompt}\n\n---\n\n${userMessages}`;
-
-    return { systemPrompt, fullPrompt };
-  }
-
-  setSystemPrompt(prompt: string): void {
-    this.systemPrompt = prompt;
-  }
+  return { 
+    candidate: response.text, 
+    reflectiveResult: response.reflectiveResult, 
+    refinedCandidate: response.refinedCandidate,
+    memories: response.context.relevantMemories 
+  };
 }
