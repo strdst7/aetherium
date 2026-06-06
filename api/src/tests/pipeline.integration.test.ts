@@ -105,11 +105,16 @@ describe("Full Pipeline Integration", () => {
     expect(auditResult.records).toHaveLength(1);
 
     const auditRecord = auditResult.records[0];
+    expect(auditRecord.recordId).toBeTruthy();
     expect(auditRecord.identityId).toBe(identity.id);
+    expect(auditRecord.identityName).toBe(identity.name);
+    expect(auditRecord.identityVersion).toBe(identity.version);
     expect(auditRecord.prompt).toBeTruthy();
     expect(auditRecord.output).toBeTruthy();
     expect(auditRecord.reasoningTrace).toBeDefined();
     expect(auditRecord.validationReport).toBeDefined();
+    expect(auditRecord.provenance).toBeDefined();
+    expect(auditRecord.provenance.providerName).toBeTruthy();
     expect(auditRecord.timestamp).toBeTruthy();
     expect(auditRecord.hash).toBeTruthy();
     expect(auditRecord.hash).toMatch(/^[a-f0-9]{64}$/);
