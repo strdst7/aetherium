@@ -257,10 +257,14 @@ describe("Cross-Identity Leakage and Contamination", () => {
       metadata: {},
     });
 
-    // Query audit for identityB
-    const result = await auditService.query({ identityId: identityB.id });
+    // Query audit for identityB — should be empty
+    const resultB = await auditService.query({ identityId: identityB.id });
+    expect(resultB.records).toEqual([]);
+    expect(resultB.pagination.total).toBe(0);
 
-    expect(result.records).toEqual([]);
-    expect(result.pagination.total).toBe(0);
+    // Query audit for identityA — should contain the saved record
+    const resultA = await auditService.query({ identityId: identityA.id });
+    expect(resultA.records).toHaveLength(1);
+    expect(resultA.records[0].identityId).toBe(identityA.id);
   });
 });
