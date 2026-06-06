@@ -167,13 +167,23 @@ Plans:
 **Plans**: 7 plans in 4 waves
 
 Plans:
-- [ ] 09-01-PLAN.md — Shared UI Infrastructure & Design Tokens (types, API client, IdentitySelector, Layout)
-- [ ] 09-02-PLAN.md — Identity Registration Page (form + page for UI-01)
-- [ ] 09-03-PLAN.md — Reasoning Trace Component (expandable step-by-step display for UI-03)
-- [ ] 09-04-PLAN.md — Validation Report Display & API Contract (Sovereign Halo report UI + API update for UI-04)
-- [ ] 09-05-PLAN.md — Memory Inspection Page with Identity Filter (scoped memory shards for UI-05)
-- [ ] 09-06-PLAN.md — Identity Test Page (refactored reasoning shell using shared components for UI-02 + UI-06)
-- [ ] 09-07-PLAN.md — Integration, Navigation & Tests (global identity context, nav, Jest tests)
+- [x] 09-01-PLAN.md — Shared UI Infrastructure & Design Tokens (types, API client, IdentitySelector, Layout)
+- [x] 09-02-PLAN.md — Identity Registration Page (form + page for UI-01)
+- [x] 09-03-PLAN.md — Reasoning Trace Component (expandable step-by-step display for UI-03)
+- [x] 09-04-PLAN.md — Validation Report Display & API Contract (Sovereign Halo report UI + API update for UI-04)
+- [x] 09-05-PLAN.md — Memory Inspection Page with Identity Filter (scoped memory shards for UI-05)
+- [x] 09-06-PLAN.md — Identity Test Page (refactored reasoning shell using shared components for UI-02 + UI-06)
+- [x] 09-07-PLAN.md — Integration, Navigation & Tests (global identity context, nav, Jest tests)
+
+**Wave dependency notes:**
+- **Wave 1** — 09-01 (no blockers)
+- **Wave 2** *(blocked on Wave 1 completion)* — 09-02, 09-03, 09-04, 09-05
+- **Wave 3** *(blocked on Wave 2 completion)* — 09-06
+- **Wave 4** *(blocked on Wave 3 completion)* — 09-07
+
+**Cross-cutting constraints:**
+- Active identity must be selectable from a dropdown on all generation and inspection pages (UI-06)
+- All pages must use the shared Layout component and design tokens
 
 **UI hint**: yes
 
@@ -213,7 +223,7 @@ Plans:
 | 6. Mythic Module | 5/5 | Complete | 2026-06-06 |
 | 7. Sovereign Halo | 6/6 | Complete | 2026-06-06 |
 | 8. Audit & Immutability | 4/4 | Complete | 2026-06-06 |
-| 9. Web UI Extensions | 0/7 | Not started | - |
+| 9. Web UI Extensions | 7/7 | Complete | 2026-06-06 |
 | 10. End-to-End Integration & Testing | 0/5 | Not started | - |
 | 11. Performance Hardening & Documentation | 0/5 | Not started | - |
 
