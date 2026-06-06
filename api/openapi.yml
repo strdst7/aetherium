@@ -30,6 +30,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HealthResponse'
+              examples:
+                healthy:
+                  summary: All services healthy
+                  value:
+                    status: ok
+                    timestamp: "2026-06-06T12:00:00.000Z"
+                    version: "1.0.0"
+                    uptime: 3600
+                    checks:
+                      database: ok
+                      llm: ok
+                      mcp: ok
+                degraded:
+                  summary: LLM service degraded
+                  value:
+                    status: degraded
+                    timestamp: "2026-06-06T12:00:00.000Z"
+                    version: "1.0.0"
+                    uptime: 7200
+                    checks:
+                      database: ok
+                      llm: error
+                      mcp: ok
 
   /v1/info:
     get:
@@ -45,6 +68,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiInfoResponse'
+              examples:
+                apiInfo:
+                  summary: API metadata and capabilities
+                  value:
+                    name: Aetherium
+                    version: "1.0.0"
+                    description: Sovereign, identity-first AI intelligence platform
+                    endpoints:
+                      - path: /v1/reason
+                        method: POST
+                        description: Natural language reasoning
+                      - path: /identity/register
+                        method: POST
+                        description: Register a new identity
+                      - path: /audit
+                        method: GET
+                        description: Query audit records
+                    capabilities:
+                      - reasoning
+                      - tool-use
+                      - task-mode
+                      - memory
+                      - identity
+                    apiVersion: "1.0.0"
 
   /v1/reason:
     post:
@@ -61,6 +108,29 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/ReasonRequest'
+            examples:
+              toolMode:
+                summary: Tool-mode reasoning request
+                value:
+                  identity_anchor: "id_abc123"
+                  messages:
+                    - role: user
+                      content: Explain quantum computing
+                  options:
+                    mode: tool
+                    enableTools: true
+                    maxToolIterations: 5
+              taskMode:
+                summary: Task-mode reasoning request
+                value:
+                  identity_anchor: "id_abc123"
+                  messages:
+                    - role: user
+                      content: Analyze quarterly sales data and generate a report
+                  options:
+                    mode: task
+                    enableTools: true
+                    maxTaskIterations: 20
       responses:
         '200':
           description: Reasoning response
@@ -68,24 +138,86 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ReasonResponse'
+              examples:
+                success:
+                  summary: Successful reasoning response
+                  value:
+                    id: "resp_001"
+                    output: "Quantum computing harnesses quantum mechanical phenomena to perform computations. Unlike classical bits, quantum bits (qubits) can exist in superposition..."
+                    status: approved
+                    identity_anchor: "id_abc123"
+                    reasoning:
+                      orchestrator:
+                        selectedProvider: gemini
+                        relevantMemoriesCount: 3
+                        topMemories:
+                          - id: "mem_001"
+                            score: 0.92
+                            excerpt: "Quantum entanglement allows qubits to be correlated"
+                      reflective:
+                        status: approved
+                        violations: []
+                        suggestedConstraints: []
+                        confidenceScore: 0.95
+                      trace:
+                        - stage: memory_retrieval
+                          timestamp: "2026-06-06T12:00:01.000Z"
+                          details:
+                            memoryCount: 3
+                        - stage: generation
+                          timestamp: "2026-06-06T12:00:02.000Z"
+                          details:
+                            provider: gemini
+                            tokensUsed: 256
+                    apiVersion: "1.0.0"
         '400':
           description: Invalid request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                invalidRequest:
+                  summary: Missing required field
+                  value:
+                    type: "https://aetherium.io/errors/invalid-request"
+                    title: Invalid Request
+                    status: 400
+                    detail: "messages array is required"
+                    instance: "/v1/reason"
+                    apiVersion: "1.0.0"
         '404':
           description: API version not supported
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                versionNotSupported:
+                  summary: Unsupported API version requested
+                  value:
+                    type: "https://api.aetherium.io/errors/unsupported-version"
+                    title: Unsupported API Version
+                    status: 404
+                    detail: "API version '2.0.0' is not supported. Supported versions: 1.0.0"
+                    instance: "/v1/reason"
+                    apiVersion: "1.0.0"
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                internalError:
+                  summary: Unexpected server error
+                  value:
+                    type: "about:blank"
+                    title: Internal Server Error
+                    status: 500
+                    detail: "LLM provider connection timeout"
+                    instance: "/v1/reason"
+                    apiVersion: "1.0.0"
 
   /v1/memory/search:
     post:
@@ -114,6 +246,13 @@ paths:
                   type: integer
                   default: 10
                   description: Maximum number of results
+            examples:
+              basicSearch:
+                summary: Search memory by query
+                value:
+                  query: "quantum computing papers"
+                  identity_anchor: "id_abc123"
+                  limit: 5
       responses:
         '200':
           description: Search results
@@ -131,6 +270,85 @@ paths:
                           type: object
                         score:
                           type: number
+              examples:
+                searchResults:
+                  summary: Identity-scoped memory search results
+                  value:
+                    results:
+                      - doc:
+                          id: "mem_001"
+                          content: "Quantum entanglement enables secure communication protocols."
+                          metadata:
+                            source: "arxiv"
+                            topic: "quantum-cryptography"
+                          sigil: "id_abc123"
+                        score: 0.92
+                      - doc:
+                          id: "mem_002"
+                          content: "Shor's algorithm demonstrates polynomial-time integer factorization on a quantum computer."
+                          metadata:
+                            source: "nature"
+                            topic: "quantum-algorithms"
+                          sigil: "id_abc123"
+                        score: 0.87
+
+  /v1/memory/upsert:
+    post:
+      summary: Upsert memory document
+      description: Insert or update a memory document with optional identity scoping
+      operationId: memoryUpsert
+      tags:
+        - Memory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemoryUpsertRequest'
+            examples:
+              upsertDocument:
+                summary: Upsert a memory document
+                value:
+                  content: "New research finding on topological quantum error correction shows promising results."
+                  embedding:
+                    - 0.1
+                    - 0.2
+                    - 0.3
+                    - 0.4
+                  metadata:
+                    source: "research-lab"
+                    topic: "quantum-error-correction"
+                  identity_anchor: "id_abc123"
+      responses:
+        '200':
+          description: Document upserted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemoryDocument'
+              examples:
+                upserted:
+                  summary: Successfully upserted document
+                  value:
+                    id: "mem_003"
+                    content: "New research finding on topological quantum error correction shows promising results."
+                    embedding:
+                      - 0.1
+                      - 0.2
+                      - 0.3
+                      - 0.4
+                    metadata:
+                      source: "research-lab"
+                      topic: "quantum-error-correction"
+                    sigil: "id_abc123"
+                    createdAt: "2026-06-06T12:00:00.000Z"
+                    updatedAt: "2026-06-06T12:00:00.000Z"
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
 
   /identity/register:
     post:
@@ -145,6 +363,19 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/IdentityCreateRequest'
+            examples:
+              registerIdentity:
+                summary: Register a research assistant identity
+                value:
+                  name: "Research Assistant"
+                  developerId: "dev@example.com"
+                  config:
+                    preferredProvider: "gemini"
+                    defaultTemperature: 0.7
+                    maxTokens: 1024
+                    customRules:
+                      - "Use academic tone"
+                      - "Cite sources when possible"
       responses:
         '201':
           description: Identity created successfully
@@ -152,12 +383,60 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/IdentityResponse'
+              examples:
+                created:
+                  summary: Newly created identity
+                  value:
+                    identity:
+                      id: "id_xyz789"
+                      name: "Research Assistant"
+                      developerId: "dev@example.com"
+                      sigilHash: "a1b2c3d4e5f6..."
+                      version: 1
+                      config:
+                        preferredProvider: "gemini"
+                        defaultTemperature: 0.7
+                        maxTokens: 1024
+                        customRules:
+                          - "Use academic tone"
+                          - "Cite sources when possible"
+                      versions:
+                        - version: 1
+                          timestamp: "2026-01-01T00:00:00.000Z"
+                          state:
+                            id: "id_xyz789"
+                            name: "Research Assistant"
+                            developerId: "dev@example.com"
+                            sigilHash: "a1b2c3d4e5f6..."
+                            version: 1
+                            config:
+                              preferredProvider: "gemini"
+                            versions: []
+                            createdAt: "2026-01-01T00:00:00.000Z"
+                            updatedAt: "2026-01-01T00:00:00.000Z"
+                      createdAt: "2026-01-01T00:00:00.000Z"
+                      updatedAt: "2026-01-01T00:00:00.000Z"
+                    apiVersion: "1.0.0"
         '400':
           description: Invalid request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                validationFailed:
+                  summary: Missing required fields
+                  value:
+                    type: "https://aetherium.io/errors/invalid-request"
+                    title: Invalid Request
+                    status: 400
+                    detail: "Identity registration validation failed"
+                    instance: "/identity/register"
+                    errors:
+                      - field: "name"
+                        message: "name is required and must be a non-empty string"
+                        code: "MISSING_FIELD"
+                    apiVersion: "1.0.0"
 
   /identity:
     get:
@@ -173,6 +452,33 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/IdentityListResponse'
+              examples:
+                identityList:
+                  summary: List of registered identities
+                  value:
+                    identities:
+                      - id: "id_abc123"
+                        name: "Research Assistant"
+                        developerId: "dev@example.com"
+                        sigilHash: "b2c3d4e5f6g7..."
+                        version: 2
+                        config:
+                          preferredProvider: "gemini"
+                        versions: []
+                        createdAt: "2026-01-01T00:00:00.000Z"
+                        updatedAt: "2026-06-01T00:00:00.000Z"
+                      - id: "id_def456"
+                        name: "Creative Writer"
+                        developerId: "writer@example.com"
+                        sigilHash: "c3d4e5f6g7h8..."
+                        version: 1
+                        config:
+                          preferredProvider: "ollama"
+                        versions: []
+                        createdAt: "2026-02-01T00:00:00.000Z"
+                        updatedAt: "2026-02-01T00:00:00.000Z"
+                    count: 2
+                    apiVersion: "1.0.0"
 
   /identity/{id}:
     get:
@@ -188,6 +494,7 @@ paths:
           schema:
             type: string
           description: Identity ID
+          example: "id_abc123"
       responses:
         '200':
           description: Identity found
@@ -195,12 +502,68 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/IdentityResponse'
+              examples:
+                identityFound:
+                  summary: Full identity details
+                  value:
+                    identity:
+                      id: "id_abc123"
+                      name: "Research Assistant"
+                      developerId: "dev@example.com"
+                      sigilHash: "b2c3d4e5f6g7..."
+                      version: 2
+                      config:
+                        preferredProvider: "gemini"
+                        defaultTemperature: 0.7
+                        maxTokens: 1024
+                        customRules:
+                          - "Use academic tone"
+                      versions:
+                        - version: 1
+                          timestamp: "2026-01-01T00:00:00.000Z"
+                          state:
+                            id: "id_abc123"
+                            name: "Research Assistant"
+                            developerId: "dev@example.com"
+                            sigilHash: "b2c3d4e5f6g7..."
+                            version: 1
+                            config:
+                              preferredProvider: "gemini"
+                            versions: []
+                            createdAt: "2026-01-01T00:00:00.000Z"
+                            updatedAt: "2026-01-01T00:00:00.000Z"
+                        - version: 2
+                          timestamp: "2026-06-01T00:00:00.000Z"
+                          state:
+                            id: "id_abc123"
+                            name: "Research Assistant"
+                            developerId: "dev@example.com"
+                            sigilHash: "b2c3d4e5f6g7..."
+                            version: 2
+                            config:
+                              preferredProvider: "gemini"
+                            versions: []
+                            createdAt: "2026-01-01T00:00:00.000Z"
+                            updatedAt: "2026-06-01T00:00:00.000Z"
+                      createdAt: "2026-01-01T00:00:00.000Z"
+                      updatedAt: "2026-06-01T00:00:00.000Z"
+                    apiVersion: "1.0.0"
         '404':
           description: Identity not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                notFound:
+                  summary: Identity does not exist
+                  value:
+                    type: "https://aetherium.io/errors/identity-not-found"
+                    title: Identity Not Found
+                    status: 404
+                    detail: "Identity with id 'id_unknown' not found"
+                    instance: "/identity/id_unknown"
+                    apiVersion: "1.0.0"
     put:
       summary: Update identity
       description: Update an existing identity. Creates a version snapshot automatically.
@@ -214,12 +577,21 @@ paths:
           schema:
             type: string
           description: Identity ID
+          example: "id_abc123"
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/IdentityUpdateRequest'
+            examples:
+              updateName:
+                summary: Update identity name and config
+                value:
+                  name: "Updated Name"
+                  config:
+                    preferredProvider: "gemini"
+                    defaultTemperature: 0.5
       responses:
         '200':
           description: Identity updated
@@ -227,12 +599,79 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/IdentityResponse'
+              examples:
+                updated:
+                  summary: Identity with incremented version
+                  value:
+                    identity:
+                      id: "id_abc123"
+                      name: "Updated Name"
+                      developerId: "dev@example.com"
+                      sigilHash: "b2c3d4e5f6g7..."
+                      version: 3
+                      config:
+                        preferredProvider: "gemini"
+                        defaultTemperature: 0.5
+                      versions:
+                        - version: 1
+                          timestamp: "2026-01-01T00:00:00.000Z"
+                          state:
+                            id: "id_abc123"
+                            name: "Research Assistant"
+                            developerId: "dev@example.com"
+                            sigilHash: "b2c3d4e5f6g7..."
+                            version: 1
+                            config:
+                              preferredProvider: "gemini"
+                            versions: []
+                            createdAt: "2026-01-01T00:00:00.000Z"
+                            updatedAt: "2026-01-01T00:00:00.000Z"
+                        - version: 2
+                          timestamp: "2026-06-01T00:00:00.000Z"
+                          state:
+                            id: "id_abc123"
+                            name: "Research Assistant"
+                            developerId: "dev@example.com"
+                            sigilHash: "b2c3d4e5f6g7..."
+                            version: 2
+                            config:
+                              preferredProvider: "gemini"
+                            versions: []
+                            createdAt: "2026-01-01T00:00:00.000Z"
+                            updatedAt: "2026-06-01T00:00:00.000Z"
+                        - version: 3
+                          timestamp: "2026-06-06T00:00:00.000Z"
+                          state:
+                            id: "id_abc123"
+                            name: "Updated Name"
+                            developerId: "dev@example.com"
+                            sigilHash: "b2c3d4e5f6g7..."
+                            version: 3
+                            config:
+                              preferredProvider: "gemini"
+                              defaultTemperature: 0.5
+                            versions: []
+                            createdAt: "2026-01-01T00:00:00.000Z"
+                            updatedAt: "2026-06-06T00:00:00.000Z"
+                      createdAt: "2026-01-01T00:00:00.000Z"
+                      updatedAt: "2026-06-06T00:00:00.000Z"
+                    apiVersion: "1.0.0"
         '404':
           description: Identity not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                notFound:
+                  summary: Identity does not exist
+                  value:
+                    type: "https://aetherium.io/errors/identity-not-found"
+                    title: Identity Not Found
+                    status: 404
+                    detail: "Identity with id 'id_unknown' not found"
+                    instance: "/identity/id_unknown"
+                    apiVersion: "1.0.0"
     delete:
       summary: Delete identity
       description: Delete an identity by ID
@@ -246,6 +685,7 @@ paths:
           schema:
             type: string
           description: Identity ID
+          example: "id_abc123"
       responses:
         '204':
           description: Identity deleted
@@ -255,6 +695,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                notFound:
+                  summary: Identity does not exist
+                  value:
+                    type: "https://aetherium.io/errors/identity-not-found"
+                    title: Identity Not Found
+                    status: 404
+                    detail: "Identity with id 'id_unknown' not found"
+                    instance: "/identity/id_unknown"
+                    apiVersion: "1.0.0"
 
   /identity/{id}/versions:
     get:
@@ -270,6 +720,7 @@ paths:
           schema:
             type: string
           description: Identity ID
+          example: "id_abc123"
       responses:
         '200':
           description: Version history
@@ -277,8 +728,270 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/IdentityVersionHistoryResponse'
+              examples:
+                versionHistory:
+                  summary: Immutable version history
+                  value:
+                    identityId: "id_abc123"
+                    versions:
+                      - version: 1
+                        timestamp: "2026-01-01T00:00:00.000Z"
+                        state:
+                          id: "id_abc123"
+                          name: "Research Assistant"
+                          developerId: "dev@example.com"
+                          sigilHash: "b2c3d4e5f6g7..."
+                          version: 1
+                          config:
+                            preferredProvider: "gemini"
+                          versions: []
+                          createdAt: "2026-01-01T00:00:00.000Z"
+                          updatedAt: "2026-01-01T00:00:00.000Z"
+                      - version: 2
+                        timestamp: "2026-06-01T00:00:00.000Z"
+                        state:
+                          id: "id_abc123"
+                          name: "Research Assistant"
+                          developerId: "dev@example.com"
+                          sigilHash: "b2c3d4e5f6g7..."
+                          version: 2
+                          config:
+                            preferredProvider: "gemini"
+                          versions: []
+                          createdAt: "2026-01-01T00:00:00.000Z"
+                          updatedAt: "2026-06-01T00:00:00.000Z"
+                    count: 2
+                    apiVersion: "1.0.0"
         '404':
           description: Identity not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                notFound:
+                  summary: Identity does not exist
+                  value:
+                    type: "https://aetherium.io/errors/identity-not-found"
+                    title: Identity Not Found
+                    status: 404
+                    detail: "Identity with id 'id_unknown' not found"
+                    instance: "/identity/id_unknown/versions"
+                    apiVersion: "1.0.0"
+
+  /audit:
+    get:
+      summary: Query audit records
+      description: Retrieve append-only audit trail for an identity with optional date filtering and pagination
+      operationId: queryAuditRecords
+      tags:
+        - Audit
+      parameters:
+        - name: identity_id
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Identity ID to filter records
+          example: "id_abc123"
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: Start date (ISO 8601)
+          example: "2026-01-01T00:00:00.000Z"
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: End date (ISO 8601)
+          example: "2026-12-31T23:59:59.000Z"
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+          description: Maximum records to return
+          example: 20
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+          description: Pagination offset
+          example: 0
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+          description: Sort order by timestamp
+          example: desc
+      responses:
+        '200':
+          description: Audit records
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditListResponse'
+              examples:
+                auditRecords:
+                  summary: Paginated audit records for an identity
+                  value:
+                    records:
+                      - recordId: "audit_001"
+                        identityId: "id_abc123"
+                        identityName: "Research Assistant"
+                        identityVersion: 2
+                        prompt: "Explain quantum computing"
+                        output: "Quantum computing harnesses quantum mechanical phenomena..."
+                        reasoningTrace:
+                          - stage: memory_retrieval
+                            timestamp: "2026-06-06T12:00:01.000Z"
+                        validationReport:
+                          status: passed
+                          confidenceScore: 0.95
+                          checks:
+                            - rule: "tone"
+                              passed: true
+                              detail: "Tone matches identity specification"
+                        provenance:
+                          originalOutput: "Quantum computing uses qubits..."
+                          providerName: "gemini"
+                          modelVersion: "gemini-1.5-pro"
+                          mythifyTransformations:
+                            - "Applied academic tone"
+                          memoryShards:
+                            - id: "mem_001"
+                              excerpt: "Quantum entanglement..."
+                              score: 0.92
+                          regenerationAttempts: 0
+                        timestamp: "2026-06-06T12:00:05.000Z"
+                        hash: "sha256:a1b2c3d4..."
+                    pagination:
+                      total: 42
+                      limit: 20
+                      offset: 0
+                      hasMore: true
+                    apiVersion: "1.0.0"
+        '400':
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                missingIdentity:
+                  summary: Missing required identity_id
+                  value:
+                    type: "about:blank"
+                    title: Bad Request
+                    status: 400
+                    detail: "identity_id is required"
+                    instance: "/audit"
+                    apiVersion: "1.0.0"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+  /v1/multi-agent/reason:
+    post:
+      summary: Multi-agent council reasoning
+      description: Submit a prompt to the multi-agent council (Archivist, SigilKeeper, Narrator) with identity binding
+      operationId: multiAgentReason
+      tags:
+        - Reasoning
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MultiAgentReasonRequest'
+            examples:
+              councilRequest:
+                summary: Multi-agent council request
+                value:
+                  identity_anchor: "id_abc123"
+                  prompt: "Analyze the implications of quantum computing on cryptography"
+      responses:
+        '200':
+          description: Multi-agent council response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MultiAgentReasonResponse'
+              examples:
+                councilOutput:
+                  summary: Council output with per-agent validation
+                  value:
+                    archivist:
+                      output: "Retrieved 5 relevant papers on post-quantum cryptography from memory."
+                      meta:
+                        results:
+                          - id: "mem_001"
+                            excerpt: "Lattice-based cryptography is resistant to quantum attacks."
+                            score: 0.95
+                      validationReport:
+                        status: passed
+                        confidenceScore: 0.92
+                        checks:
+                          - rule: "accuracy"
+                            passed: true
+                            detail: "Sources verified against memory"
+                    sigilKeeper:
+                      output: "Approved. No forbidden behaviors detected. Identity tone is consistent."
+                      meta:
+                        violations: []
+                      validationReport:
+                        status: passed
+                        confidenceScore: 0.98
+                        checks:
+                          - rule: "forbidden_behaviors"
+                            passed: true
+                            detail: "No restricted content detected"
+                    narrator:
+                      output: "Quantum computing threatens RSA and ECC, but lattice-based and hash-based schemes offer viable post-quantum alternatives."
+                      meta: {}
+                      validationReport:
+                        status: passed
+                        confidenceScore: 0.94
+                        checks:
+                          - rule: "tone"
+                            passed: true
+                            detail: "Academic tone maintained"
+                    identity:
+                      id: "id_abc123"
+                      name: "Research Assistant"
+                      version: 2
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                missingFields:
+                  summary: Missing required fields
+                  value:
+                    type: "about:blank"
+                    title: Bad Request
+                    status: 400
+                    detail: "identity_anchor and prompt are required"
+                    instance: "/v1/multi-agent/reason"
+                    apiVersion: "1.0.0"
+        '500':
+          description: Internal server error
           content:
             application/json:
               schema:
@@ -868,6 +1581,270 @@ components:
           type: integer
         apiVersion:
           type: string
+
+    MemoryUpsertRequest:
+      type: object
+      required:
+        - content
+      properties:
+        content:
+          type: string
+          description: Memory content text
+        embedding:
+          type: array
+          items:
+            type: number
+          description: Vector embedding for the content
+        metadata:
+          type: object
+          description: Optional metadata key-value pairs
+        identity_anchor:
+          type: string
+          description: Identity anchor for memory scoping
+
+    MemoryDocument:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Document identifier
+        content:
+          type: string
+          description: Memory content text
+        embedding:
+          type: array
+          items:
+            type: number
+          description: Vector embedding
+        metadata:
+          type: object
+          description: Metadata key-value pairs
+        sigil:
+          type: string
+          description: Identity anchor tag
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    AuditRecord:
+      type: object
+      required:
+        - recordId
+        - identityId
+        - identityName
+        - identityVersion
+        - prompt
+        - output
+        - provenance
+        - timestamp
+        - hash
+      properties:
+        recordId:
+          type: string
+          description: Unique record identifier (UUID v4)
+        identityId:
+          type: string
+          description: The identity this generation was for
+        identityName:
+          type: string
+          description: Human-readable identity name
+        identityVersion:
+          type: integer
+          description: Identity version at time of generation
+        prompt:
+          type: string
+          description: The full prompt sent to the LLM
+        output:
+          type: string
+          description: The final output delivered to the user
+        reasoningTrace:
+          type: array
+          items:
+            type: object
+          description: Reasoning trace from the generation
+        validationReport:
+          $ref: '#/components/schemas/ValidationReport'
+        provenance:
+          $ref: '#/components/schemas/AuditProvenance'
+        timestamp:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp with millisecond precision
+        hash:
+          type: string
+          description: SHA-256 hash of key fields for tamper detection
+        metadata:
+          type: object
+          description: Optional extra metadata
+
+    AuditProvenance:
+      type: object
+      required:
+        - originalOutput
+        - providerName
+      properties:
+        originalOutput:
+          type: string
+          description: The raw LLM output before any transformation
+        mythifyTransformations:
+          type: array
+          items:
+            type: string
+          description: Mythic transformations applied by MythicModule
+        validationReport:
+          $ref: '#/components/schemas/ValidationReport'
+        regenerationAttempts:
+          type: integer
+          description: Number of regeneration attempts
+        memoryShards:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              excerpt:
+                type: string
+              score:
+                type: number
+        providerName:
+          type: string
+          description: Which provider generated the output
+        modelVersion:
+          type: string
+          description: Model identifier
+
+    ValidationReport:
+      type: object
+      required:
+        - status
+        - confidenceScore
+        - checks
+      properties:
+        status:
+          type: string
+          enum: [passed, failed]
+          description: Overall validation status
+        confidenceScore:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Confidence score between 0 and 1
+        checks:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationCheck'
+
+    ValidationCheck:
+      type: object
+      required:
+        - rule
+        - passed
+        - detail
+      properties:
+        rule:
+          type: string
+          description: Name of the validation rule
+        passed:
+          type: boolean
+          description: Whether the check passed
+        detail:
+          type: string
+          description: Detailed check result message
+
+    AuditPagination:
+      type: object
+      required:
+        - total
+        - limit
+        - offset
+        - hasMore
+      properties:
+        total:
+          type: integer
+          description: Total matching records
+        limit:
+          type: integer
+          description: Records per page
+        offset:
+          type: integer
+          description: Current offset
+        hasMore:
+          type: boolean
+          description: Whether more records exist
+
+    AuditListResponse:
+      type: object
+      required:
+        - records
+        - pagination
+        - apiVersion
+      properties:
+        records:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditRecord'
+          description: Audit records
+        pagination:
+          $ref: '#/components/schemas/AuditPagination'
+        apiVersion:
+          type: string
+
+    MultiAgentReasonRequest:
+      type: object
+      required:
+        - identity_anchor
+        - prompt
+      properties:
+        identity_anchor:
+          type: string
+          description: Identity anchor for consistent outputs
+        prompt:
+          type: string
+          description: Natural language prompt for the council
+
+    MultiAgentReasonResponse:
+      type: object
+      properties:
+        archivist:
+          type: object
+          properties:
+            output:
+              type: string
+            meta:
+              type: object
+            validationReport:
+              $ref: '#/components/schemas/ValidationReport'
+        sigilKeeper:
+          type: object
+          properties:
+            output:
+              type: string
+            meta:
+              type: object
+            validationReport:
+              $ref: '#/components/schemas/ValidationReport'
+        narrator:
+          type: object
+          properties:
+            output:
+              type: string
+            meta:
+              type: object
+            validationReport:
+              $ref: '#/components/schemas/ValidationReport'
+        identity:
+          type: object
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+            version:
+              type: integer
 
   securitySchemes:
     bearerAuth:
