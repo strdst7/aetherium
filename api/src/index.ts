@@ -27,7 +27,7 @@ import { createAuditRouter } from "./controllers/audit";
 import { createIdentityRouter } from "./controllers/identity";
 
 const app = express();
-const PORT = process.env.API_PORT || 8080;
+const PORT = process.env.PORT || process.env.API_PORT || 8080;
 
 // Middleware
 app.use(express.json());
