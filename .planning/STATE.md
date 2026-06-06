@@ -31,22 +31,30 @@
 |-------|-------|
 | Phase | 1 |
 | Plan | — |
-| Status | Context gathered |
+| Status | Complete |
 
 **Progress:**
 ```
-[░░░░░░░░░░░░░░░░░░░░] 0% (0/11 phases)
+[█░░░░░░░░░░░░░░░░░░░] 9% (1/11 phases)
 ```
 
 **Current Focus:**
-- Phase 1 planning complete
-- Next action: `/gsd-execute-phase 1` for execution
+- Phase 1 complete — Agent Core Foundation built
+- Next action: `/gsd-discuss-phase 2` for Phase 2 context gathering
 
 ---
 
 ## Completed Phases
 
-_None yet._
+| Phase | Name | Date | Status |
+|-------|------|------|--------|
+| 1 | Agent Core Foundation | 2026-06-06 | Complete |
+
+### Phase 1 Summary
+- **Gemini Provider Integration:** Extended AIProvider with tool-use, implemented GeminiProvider, registered with priority 0
+- **MCP Client + AgentBuilder:** Created MCP client with stdio transport, AgentBuilder wrapping Orchestrator
+- **Orchestrator Integration:** Extended ReasonResponse with tool fields, updated POST /v1/reason endpoint
+- **Test Infrastructure:** MockAgentBuilder, MockMCPServer, unit tests for all components
 
 ---
 
@@ -80,7 +88,8 @@ _None yet._
 - [x] Approve roadmap
 - [x] Plan Phase 1 (Agent Core Foundation)
 - [x] Verify existing API contracts are documented for backward compatibility checks
-- [ ] Execute Phase 1 (Agent Core Foundation)
+- [x] Execute Phase 1 (Agent Core Foundation)
+- [ ] Plan Phase 2 (Agent Task Engine)
 
 ### Blockers
 
@@ -92,9 +101,9 @@ _None._
 
 | Field | Value |
 |-------|-------|
-| Last command | `/gsd-discuss-phase 1` → context gathering |
+| Last command | `/gsd-execute-phase 1` → phase execution |
 | Context window health | Healthy |
-| Files changed this session | `.planning/phases/01-agent-core-foundation/01-CONTEXT.md`, `.planning/phases/01-agent-core-foundation/01-DISCUSSION-LOG.md`, `.planning/STATE.md` |
+| Files changed this session | `api/src/adapters/gemini-provider.ts`, `api/src/services/mcp-client.ts`, `api/src/services/agent-builder.ts`, `api/src/services/orchestrator.ts`, `api/src/controllers/reason.ts`, `api/src/index.ts`, `api/src/services/mock-*.ts`, `api/src/**/*.test.ts`, `.planning/STATE.md` |
 
 ---
 *State initialized: 2026-06-06*
