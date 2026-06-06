@@ -1,37 +1,42 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { ReasoningResponse } from '../src/types/api';
+import { IdentitySelector } from '../components/IdentitySelector';
+import { ReasoningTrace } from '../components/ReasoningTrace';
+import { ValidationReport } from '../components/ValidationReport';
+import { submitReasonRequest, getIdentities } from '../src/lib/api-client';
+import { SigilIdentity } from '../src/types/api';
 
-interface ReasoningResponse {
-  id: string;
-  output: string;
-  status: 'approved' | 'refine' | 'reject';
-  identity_anchor: string;
-  reasoning: {
-    orchestrator: {
-      selectedProvider: string;
-      relevantMemoriesCount: number;
-      topMemories: Array<{ id: string; score: number; excerpt: string }>;
-    };
-    reflective: {
-      status: string;
-      violations: Array<{ type: string; severity: string; message: string }>;
-      suggestedConstraints: Array<{ constraint: string; rationale: string }>;
-      confidenceScore: number;
-    };
-    trace: Array<{ stage: string; timestamp: string; details: any }>;
-  };
-  metadata?: any;
-}
+// TODO: When identity-context.tsx is available (Plan 09-07), import useIdentity
+// and sync identityAnchor with global context for persistence across navigation.
 
 export default function Home() {
-  const [identityAnchor, setIdentityAnchor] = useState('sigil:v1:halo-arc:001');
+  const [identities, setIdentities] = useState<SigilIdentity[]>([]);
+  const [identityAnchor, setIdentityAnchor] = useState('');
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState<ReasoningResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const resultRef = useRef<HTMLDivElement | null>(null);
+
+  // Load identities on mount
+  useEffect(() => {
+    async function load() {
+      try {
+        const ids = await getIdentities();
+        setIdentities(ids);
+        if (ids.length > 0 && !identityAnchor) {
+          setIdentityAnchor(ids[0].id);
+        }
+      } catch (err) {
+        console.error('Failed to load identities:', err);
+      }
+    }
+    load();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (response && resultRef.current) {
@@ -43,31 +48,22 @@ export default function Home() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!identityAnchor || !prompt.trim()) return;
+
     setLoading(true);
     setError(null);
     setResponse(null);
 
     try {
-      const res = await fetch(`${apiUrl}/v1/reason`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          identity_anchor: identityAnchor,
-          messages: [{ role: 'user', content: prompt }],
-          options: {
-            maxTokens: 512,
-            temperature: 0.7,
-            memoryK: 5,
-          },
-        }),
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'API request failed');
-      }
-
-      const data = await res.json();
+      const data = await submitReasonRequest(
+        identityAnchor,
+        [{ role: 'user', content: prompt }],
+        {
+          maxTokens: 512,
+          temperature: 0.7,
+          memoryK: 5,
+        }
+      );
       setResponse(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
@@ -90,8 +86,8 @@ export default function Home() {
   return (
     <div style={styles.container}>
       <header style={styles.header}>
-        <h1 style={styles.title}>⚡ Aetherium Reasoning Shell</h1>
-        <p style={styles.subtitle}>Intelligently grounded reasoning with reflective validation</p>
+        <h1 style={styles.title}>⚡ Aetherium Identity Test</h1>
+        <p style={styles.subtitle}>Select an identity, submit a prompt, and inspect the reasoning trace and validation report.</p>
         <div style={{ marginTop: '10px' }}>
           <button onClick={() => fetch(`${apiUrl}/api/forceFail?on=true`)} style={styles.demoButton}>Simulate Provider Failure</button>
           <button onClick={() => fetch(`${apiUrl}/api/forceFail?on=false`)} style={styles.demoButton}>Restore Provider</button>
@@ -104,13 +100,11 @@ export default function Home() {
           <h2>Query</h2>
           <form onSubmit={handleSubmit} style={styles.form}>
             <div style={styles.formGroup}>
-              <label style={styles.label}>Identity Anchor</label>
-              <input
-                type="text"
-                value={identityAnchor}
-                onChange={(e) => setIdentityAnchor(e.target.value)}
-                style={styles.input}
-                placeholder="e.g., sigil:v1:halo-arc:001"
+              <label style={styles.label}>Identity</label>
+              <IdentitySelector
+                identities={identities}
+                selectedId={identityAnchor}
+                onChange={setIdentityAnchor}
               />
             </div>
 
@@ -127,11 +121,11 @@ export default function Home() {
 
             <button
               type="submit"
-              disabled={loading || !prompt.trim()}
+              disabled={loading || !prompt.trim() || !identityAnchor}
               style={{
                 ...styles.button,
-                opacity: loading || !prompt.trim() ? 0.5 : 1,
-                cursor: loading || !prompt.trim() ? 'not-allowed' : 'pointer',
+                opacity: loading || !prompt.trim() || !identityAnchor ? 0.5 : 1,
+                cursor: loading || !prompt.trim() || !identityAnchor ? 'not-allowed' : 'pointer',
               }}
             >
               {loading ? '⏳ Processing...' : '🚀 Submit'}
@@ -163,13 +157,13 @@ export default function Home() {
 
         {/* Response Section */}
         {response && (
-          <section 
-            style={styles.section} 
+          <section
+            style={styles.section}
             aria-live="polite"
             ref={resultRef}
             tabIndex={-1}
           >
-            <div 
+            <div
               style={{
                 ...styles.statusBadge,
                 backgroundColor: response.status === 'approved' ? '#d4edda' : response.status === 'refine' ? '#fff3cd' : '#f8d7da',
@@ -184,10 +178,18 @@ export default function Home() {
               <h2>Candidate Output</h2>
               <div style={{ ...styles.output, boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>{response.output}</div>
 
+              {/* Validation Report */}
+              {response.validationReport && (
+                <>
+                  <h2>🔒 Sovereign Halo Validation</h2>
+                  <ValidationReport report={response.validationReport} />
+                </>
+              )}
+
               <h2>Reflective Result</h2>
-              <div 
-                style={{ 
-                  ...styles.contextBox, 
+              <div
+                style={{
+                  ...styles.contextBox,
                   borderLeft: `6px solid ${response.status === 'approved' ? '#28a745' : response.status === 'refine' ? '#ffc107' : '#dc3545'}`,
                 }}
               >
@@ -216,12 +218,16 @@ export default function Home() {
               )}
             </div>
 
+            {/* Reasoning Trace */}
+            <h3>📊 Processing Trace</h3>
+            <ReasoningTrace trace={response.reasoning.trace || []} />
+
             {/* Orchestrator Context */}
-            <h3>🧠 Orchestrator Context</h3>
+            <h3 style={{ marginTop: '24px' }}>🧠 Orchestrator Context</h3>
             <div style={styles.contextBox}>
               <p><strong>Provider:</strong> {response.reasoning.orchestrator.selectedProvider}</p>
               <p><strong>Relevant Memories:</strong> {response.reasoning.orchestrator.relevantMemoriesCount}</p>
-              
+
               {response.reasoning.orchestrator.topMemories.length > 0 && (
                 <div>
                   <strong>Top Memories:</strong>
@@ -266,17 +272,6 @@ export default function Home() {
                   ))}
                 </div>
               )}
-            </div>
-
-            {/* Processing Trace */}
-            <h3>📊 Processing Trace</h3>
-            <div style={styles.trace}>
-              {response.reasoning.trace.map((t, i) => (
-                <div key={i} style={styles.traceEntry}>
-                  <span style={styles.traceStage}>{t.stage}</span>
-                  <span style={styles.traceTime}>{new Date(t.timestamp).toLocaleTimeString()}</span>
-                </div>
-              ))}
             </div>
 
             <p style={styles.processingTime}>
@@ -444,27 +439,6 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: '#f0f7ff',
     borderRadius: '3px',
     fontSize: '0.95em',
-  },
-  trace: {
-    display: 'grid',
-    gap: '8px',
-    backgroundColor: '#f8f9fa',
-    padding: '12px',
-    borderRadius: '4px',
-    fontFamily: 'monospace',
-    fontSize: '0.9em',
-  },
-  traceEntry: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    padding: '4px 0',
-  },
-  traceStage: {
-    fontWeight: 600,
-    color: '#3498db',
-  },
-  traceTime: {
-    color: '#7f8c8d',
   },
   processingTime: {
     marginTop: '15px',

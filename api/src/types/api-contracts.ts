@@ -182,3 +182,39 @@ export interface ProblemDetails extends VersionedResponse {
   instance?: string;
   errors?: ValidationError[];
 }
+
+// Re-export identity types for downstream consumers
+export {
+  SigilIdentity,
+  IdentityVersion,
+  IdentityConfig,
+  IdentityCreateRequest,
+  IdentityUpdateRequest,
+  IdentityResponse,
+  IdentityListResponse,
+  IdentityVersionHistoryResponse,
+} from "./identity";
+
+// Re-export halo types for downstream consumers
+export {
+  ValidationRule,
+  ValidationCheck,
+  ValidationReport,
+  FailureReport,
+  ToneDeviationCheck,
+  SymbolicDriftCheck,
+  HaloValidationOptions,
+  DEFAULT_HALO_OPTIONS,
+  MAX_HALO_ATTEMPTS,
+  computeConfidenceScore,
+} from "./halo";
+
+// Re-export audit types for downstream consumers
+export {
+  AuditRecord,
+  AuditRecordCreate,
+  AuditQuery,
+  AuditPagination,
+  AuditProvenance,
+  AuditListResponse,
+} from "./audit";

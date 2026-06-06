@@ -132,6 +132,158 @@ paths:
                         score:
                           type: number
 
+  /identity/register:
+    post:
+      summary: Register a new identity
+      description: Create a new Sigil identity with name, developerId, and optional config
+      operationId: registerIdentity
+      tags:
+        - Identity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IdentityCreateRequest'
+      responses:
+        '201':
+          description: Identity created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdentityResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+  /identity:
+    get:
+      summary: List all identities
+      description: Retrieve all registered identities
+      operationId: listIdentities
+      tags:
+        - Identity
+      responses:
+        '200':
+          description: List of identities
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdentityListResponse'
+
+  /identity/{id}:
+    get:
+      summary: Get identity by ID
+      description: Retrieve a specific identity by its unique identifier
+      operationId: getIdentityById
+      tags:
+        - Identity
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Identity ID
+      responses:
+        '200':
+          description: Identity found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdentityResponse'
+        '404':
+          description: Identity not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+    put:
+      summary: Update identity
+      description: Update an existing identity. Creates a version snapshot automatically.
+      operationId: updateIdentity
+      tags:
+        - Identity
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Identity ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IdentityUpdateRequest'
+      responses:
+        '200':
+          description: Identity updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdentityResponse'
+        '404':
+          description: Identity not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+    delete:
+      summary: Delete identity
+      description: Delete an identity by ID
+      operationId: deleteIdentity
+      tags:
+        - Identity
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Identity ID
+      responses:
+        '204':
+          description: Identity deleted
+        '404':
+          description: Identity not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+  /identity/{id}/versions:
+    get:
+      summary: Get identity version history
+      description: Retrieve immutable version history for an identity
+      operationId: getIdentityVersions
+      tags:
+        - Identity
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Identity ID
+      responses:
+        '200':
+          description: Version history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdentityVersionHistoryResponse'
+        '404':
+          description: Identity not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
 components:
   schemas:
     HealthResponse:
@@ -566,6 +718,156 @@ components:
                 type: string
               code:
                 type: string
+
+    SigilIdentity:
+      type: object
+      required:
+        - id
+        - name
+        - developerId
+        - sigilHash
+        - version
+        - config
+        - versions
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          description: Unique identifier
+        name:
+          type: string
+          description: Human-readable identity name
+        developerId:
+          type: string
+          description: Developer identifier (email or username)
+        sigilHash:
+          type: string
+          description: Deterministic hash from canonicalized identity fields
+        version:
+          type: integer
+          description: Current version number
+        config:
+          $ref: '#/components/schemas/IdentityConfig'
+        versions:
+          type: array
+          items:
+            $ref: '#/components/schemas/IdentityVersion'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    IdentityConfig:
+      type: object
+      properties:
+        preferredProvider:
+          type: string
+        defaultTemperature:
+          type: number
+        maxTokens:
+          type: integer
+        memorySettings:
+          type: object
+          properties:
+            alpha:
+              type: number
+            k:
+              type: integer
+        customRules:
+          type: array
+          items:
+            type: string
+
+    IdentityVersion:
+      type: object
+      required:
+        - version
+        - timestamp
+        - state
+      properties:
+        version:
+          type: integer
+          description: Version number of this snapshot
+        timestamp:
+          type: string
+          format: date-time
+          description: When this snapshot was created
+        state:
+          $ref: '#/components/schemas/SigilIdentity'
+          description: Full identity state at this version
+
+    IdentityCreateRequest:
+      type: object
+      required:
+        - name
+        - developerId
+      properties:
+        name:
+          type: string
+          description: Human-readable identity name
+        developerId:
+          type: string
+          description: Developer identifier
+        config:
+          $ref: '#/components/schemas/IdentityConfig'
+
+    IdentityUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Updated identity name
+        config:
+          $ref: '#/components/schemas/IdentityConfig'
+
+    IdentityResponse:
+      type: object
+      required:
+        - identity
+        - apiVersion
+      properties:
+        identity:
+          $ref: '#/components/schemas/SigilIdentity'
+        apiVersion:
+          type: string
+
+    IdentityListResponse:
+      type: object
+      required:
+        - identities
+        - count
+        - apiVersion
+      properties:
+        identities:
+          type: array
+          items:
+            $ref: '#/components/schemas/SigilIdentity'
+        count:
+          type: integer
+        apiVersion:
+          type: string
+
+    IdentityVersionHistoryResponse:
+      type: object
+      required:
+        - identityId
+        - versions
+        - count
+        - apiVersion
+      properties:
+        identityId:
+          type: string
+        versions:
+          type: array
+          items:
+            $ref: '#/components/schemas/IdentityVersion'
+        count:
+          type: integer
+        apiVersion:
+          type: string
 
   securitySchemes:
     bearerAuth:

@@ -42,7 +42,7 @@ export class MemoryService {
     }
   }
 
-  async upsertMemory(doc: MemoryDocument): Promise<MemoryDocument> {
+  async upsertMemory(doc: MemoryDocument, identityAnchor?: string): Promise<MemoryDocument> {
     if (!this.collection) {
       throw new Error("Memory service not connected");
     }
@@ -50,13 +50,18 @@ export class MemoryService {
     const id = doc.id || doc._id || `mem_${Date.now()}`;
     const now = new Date();
 
-    const upsertDoc = {
+    const upsertDoc: MemoryDocument = {
       ...doc,
       _id: id,
       id,
       updatedAt: now,
       createdAt: doc.createdAt || now,
     };
+
+    // Tag memory with identity anchor if provided
+    if (identityAnchor) {
+      upsertDoc.sigil = identityAnchor;
+    }
 
     await this.collection.updateOne({ _id: id }, { $set: upsertDoc }, { upsert: true });
     return upsertDoc;
@@ -69,14 +74,20 @@ export class MemoryService {
     return this.collection.findOne({ _id: id });
   }
 
-  async vectorSearch(queryEmbedding: number[], alpha: number = 0.7, k: number = 5): Promise<VectorSearchResult[]> {
+  async vectorSearch(queryEmbedding: number[], alpha: number = 0.7, k: number = 5, identityAnchor?: string): Promise<VectorSearchResult[]> {
     if (!this.collection) {
       throw new Error("Memory service not connected");
     }
 
-    // Fetch all documents with embeddings
+    // Build query filter
+    const filter: any = { embedding: { $exists: true, $type: "array" } };
+    if (identityAnchor) {
+      filter.sigil = identityAnchor;
+    }
+
+    // Fetch documents with embeddings
     const docs = await this.collection
-      .find({ embedding: { $exists: true, $type: "array" } })
+      .find(filter)
       .toArray();
 
     if (docs.length === 0) {

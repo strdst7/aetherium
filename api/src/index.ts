@@ -15,6 +15,15 @@ import { versionNegotiation, addVersionToResponse } from "./middleware/version-n
 import { errorHandler } from "./middleware/error-handler";
 import { createDocsRouter } from "./routes/docs";
 import { createHealthRouter } from "./routes/health";
+import { IdentityService } from "./services/identity-service";
+import { IdentityBindingService } from "./services/identity-binding";
+import { IdentityConstraintEngine } from "./services/identity-constraints";
+import { SymbolicAnchorLoader } from "./services/symbolic-anchor-loader";
+import { MythicModule } from "./services/mythic-module";
+import { SovereignHaloService } from "./services/sovereign-halo";
+import { AuditService } from "./services/audit-service";
+import { createAuditRouter } from "./controllers/audit";
+import { createIdentityRouter } from "./controllers/identity";
 
 const app = express();
 const PORT = process.env.API_PORT || 8080;
@@ -52,6 +61,35 @@ async function bootstrap() {
     await memoryService.connect(process.env.MONGODB_URI);
     console.log("✅ Memory service connected");
 
+    // Initialize identity service
+    const identityService = new IdentityService();
+    await identityService.connect(process.env.MONGODB_URI);
+    console.log("✅ Identity service connected");
+
+    // Initialize identity binding service
+    const identityBinding = new IdentityBindingService(identityService);
+    console.log("✅ Identity binding service initialized");
+
+    // Initialize mythic module
+    const anchorLoader = new SymbolicAnchorLoader();
+    await anchorLoader.load();
+    const mythicModule = new MythicModule(anchorLoader);
+    console.log("✅ Mythic module initialized");
+
+    // Initialize identity constraint engine (for Sovereign Halo)
+    const constraintEngine = new IdentityConstraintEngine();
+    console.log("✅ Identity constraint engine initialized");
+
+    // Initialize Sovereign Halo
+    const sovereignHalo = new SovereignHaloService(constraintEngine, mythicModule, {
+      maxAttempts: 3,
+      temperaturePenalty: 0.1,
+      requireSymbolicAnchors: true,
+      toneTolerance: 0.5,
+      skipSafetyCheck: false,
+    });
+    console.log("✅ Sovereign Halo initialized");
+
     // Initialize provider registry via bootstrap
     const { geminiProvider, ollamaProvider } = await registerProviders();
     const ollamaHealth = await ollamaProvider.healthCheck();
@@ -60,10 +98,10 @@ async function bootstrap() {
     console.log(`⚠️  Ollama provider health: ${ollamaHealth.ok ? "healthy" : "unavailable (using mock fallback)"}`);
     console.log("✅ Providers registered");
 
-    // Initialize orchestrator
+    // Initialize orchestrator (with identity binding, mythic module, sovereign halo, and audit service)
     const registry = ProviderRegistry.instance;
-    const orchestrator = new Orchestrator(memoryService, registry);
-    console.log("✅ Orchestrator initialized");
+    const orchestrator = new Orchestrator(memoryService, registry, identityBinding, mythicModule, sovereignHalo, auditService);
+    console.log("✅ Orchestrator initialized with identity binding, mythic module, sovereign halo, and audit service");
 
     // Initialize reflective service
     const reflectiveService = new ReflectiveService();
@@ -96,9 +134,18 @@ async function bootstrap() {
     console.log("✅ Memory visualization routes registered");
 
     // Initialize multi-agent orchestrator
-    const multiAgentOrchestrator = new MultiAgentOrchestrator(memoryService, reflectiveService);
+    const multiAgentOrchestrator = new MultiAgentOrchestrator(memoryService, reflectiveService, identityBinding, sovereignHalo);
     app.use("/", createMultiAgentRouter(multiAgentOrchestrator));
-    console.log("✅ Multi-agent routes registered");
+    console.log("✅ Multi-agent routes registered with Sovereign Halo");
+
+    // Initialize audit service
+    const auditService = new AuditService();
+    await auditService.connect(process.env.MONGODB_URI);
+    console.log("✅ Audit service connected");
+
+    // Register audit routes
+    app.use("/", createAuditRouter(auditService));
+    console.log("✅ Audit routes registered");
 
     // Register reason endpoint
     const reasonController = new ReasonController(orchestrator, reflectiveService, agentBuilder);
@@ -126,6 +173,10 @@ async function bootstrap() {
     // Register documentation routes
     app.use("/", createDocsRouter());
     console.log("✅ Documentation routes registered");
+
+    // Register identity routes
+    app.use("/", createIdentityRouter(identityService));
+    console.log("✅ Identity routes registered");
 
     // Error handling middleware (must be last)
     app.use(errorHandler);

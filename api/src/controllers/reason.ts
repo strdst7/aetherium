@@ -83,6 +83,11 @@ export interface ReasonResponse {
   planStatus?: PlanStatus;
   metadata?: any;
   apiVersion?: string;
+  identity?: {
+    id: string;
+    name: string;
+    version: number;
+  };
 }
 
 export class ReasonController {
@@ -309,6 +314,13 @@ export class ReasonController {
           mode: isTaskMode ? 'task' : 'tool',
         },
         apiVersion: CURRENT_API_VERSION,
+        identity: orchestratorResponse.context.identity
+          ? {
+              id: orchestratorResponse.context.identity.id,
+              name: orchestratorResponse.context.identity.name,
+              version: orchestratorResponse.context.identity.version,
+            }
+          : undefined,
       };
 
       trace.push({

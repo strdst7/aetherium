@@ -116,7 +116,7 @@ export class AetheriumError extends Error {
     this.instance = options?.instance;
     
     if (options?.cause) {
-      this.cause = options.cause;
+      (this as any).cause = options.cause;
     }
   }
 

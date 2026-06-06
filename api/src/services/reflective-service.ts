@@ -1,5 +1,7 @@
 import { VectorSearchResult } from "./memory-service";
 import { OrchestratorContext } from "./orchestrator";
+import { SigilIdentity } from "../types/identity";
+import { IdentityConstraintEngine, RuleCheck } from "./identity-constraints";
 
 export interface Violation {
   rule: string;
@@ -12,16 +14,29 @@ export interface ReflectiveCheckResult {
   violations: Violation[];
   suggestedConstraints: any[];
   confidenceScore: number;
+  identityRuleChecks?: RuleCheck[];
 }
 
 export class ReflectiveService {
+  private constraintEngine: IdentityConstraintEngine;
+
+  constructor() {
+    this.constraintEngine = new IdentityConstraintEngine();
+  }
+
   /**
    * Upgraded evaluation logic as per user specification.
    * Detects sigil geometry violations and identity contradictions.
+   * Optionally evaluates identity constraints if identity is provided.
    */
-  evaluate(candidate: any, memories: VectorSearchResult[]): { status: string; violations: Violation[] } {
+  evaluate(
+    candidate: any,
+    memories: VectorSearchResult[],
+    identity?: SigilIdentity
+  ): { status: string; violations: Violation[]; identityRuleChecks?: RuleCheck[] } {
     const text = (candidate.text || candidate || "").toLowerCase();
     const violations: Violation[] = [];
+    let identityRuleChecks: RuleCheck[] | undefined;
 
     // 1. Sigil geometry violation
     if (text.includes("rotate the sigil") || text.includes("flip the sigil")) {
@@ -45,9 +60,18 @@ export class ReflectiveService {
       }
     }
 
+    // 3. Identity constraints (if identity provided)
+    if (identity) {
+      const constraintResult = this.constraintEngine.evaluate(text, identity);
+      if (constraintResult.violations.length > 0) {
+        violations.push(...constraintResult.violations);
+      }
+      identityRuleChecks = constraintResult.ruleChecks;
+    }
+
     return violations.length
-      ? { status: "refine", violations }
-      : { status: "approved", violations: [] };
+      ? { status: "refine", violations, identityRuleChecks }
+      : { status: "approved", violations: [], identityRuleChecks };
   }
 
   /**
@@ -56,15 +80,17 @@ export class ReflectiveService {
    */
   async check(
     candidate: string,
-    context: OrchestratorContext
+    context: OrchestratorContext,
+    identity?: SigilIdentity
   ): Promise<ReflectiveCheckResult> {
-    const result = this.evaluate({ text: candidate }, context.relevantMemories);
+    const result = this.evaluate({ text: candidate }, context.relevantMemories, identity);
     
     return {
       status: result.status as "approved" | "refine" | "reject",
       violations: result.violations,
       suggestedConstraints: [],
-      confidenceScore: result.status === "approved" ? 0.95 : 0.2
+      confidenceScore: result.status === "approved" ? 0.95 : 0.2,
+      identityRuleChecks: result.identityRuleChecks,
     };
   }
 }

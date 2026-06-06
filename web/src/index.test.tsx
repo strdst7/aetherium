@@ -2,29 +2,39 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import Home from '../pages/index';
 
-// Mock fetch
-global.fetch = jest.fn();
+// Mock the API client
+jest.mock('../src/lib/api-client', () => ({
+  getIdentities: jest.fn().mockResolvedValue([
+    { id: 'test-id-1', name: 'Test Identity', version: 1, sigilHash: 'abc123', developerId: 'dev1', createdAt: '2024-01-01', updatedAt: '2024-01-01' }
+  ]),
+  submitReasonRequest: jest.fn(),
+}));
+
+import { submitReasonRequest } from '../src/lib/api-client';
 
 describe('Home Page', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it('renders the query form', () => {
+  it('renders the query form', async () => {
     render(<Home />);
-    expect(screen.getByText(/⚡ Aetherium Reasoning Shell/i)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText(/⚡ Aetherium Identity Test/i)).toBeInTheDocument();
+    });
   });
 
   it('submits the form and displays the result', async () => {
     const mockResponse = {
+      id: 'resp-1',
       status: 'approved',
       output: 'The Halo Array is a superweapon.',
+      identity_anchor: 'test-id-1',
       reasoning: {
         orchestrator: {
           selectedProvider: 'mock',
           relevantMemoriesCount: 1,
           topMemories: [],
-          trace: []
         },
         reflective: {
           status: 'approved',
@@ -37,13 +47,14 @@ describe('Home Page', () => {
       metadata: { processingTimeMs: 100 }
     };
 
-    (global.fetch as jest.Mock).mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockResponse,
-    });
+    (submitReasonRequest as jest.Mock).mockResolvedValueOnce(mockResponse);
 
     render(<Home />);
-    
+
+    await waitFor(() => {
+      expect(screen.getByText('Test Identity (v1)')).toBeInTheDocument();
+    });
+
     const textarea = screen.getByPlaceholderText(/Enter your reasoning query.../i);
     fireEvent.change(textarea, { target: { value: 'What is the Halo Array?' } });
     fireEvent.click(screen.getByText(/🚀 Submit/i));
@@ -56,37 +67,40 @@ describe('Home Page', () => {
 
   it('displays refined output when available', async () => {
     const mockResponse = {
+      id: 'resp-2',
       status: 'refine',
       output: 'Original bad output',
+      identity_anchor: 'test-id-1',
       reasoning: {
-        orchestrator: { selectedProvider: 'mock', relevantMemoriesCount: 1, topMemories: [], trace: [] },
-        reflective: { 
-          status: 'refine', 
+        orchestrator: { selectedProvider: 'mock', relevantMemoriesCount: 1, topMemories: [] },
+        reflective: {
+          status: 'refine',
           violations: [{ message: 'Bad geometry', severity: 'error' }],
           suggestedConstraints: [],
           confidenceScore: 0.2
         },
         trace: []
       },
-      metadata: { 
+      metadata: {
         refinedCandidate: { text: 'Refined good output' },
-        processingTimeMs: 200 
+        processingTimeMs: 200
       }
     };
 
-    (global.fetch as jest.Mock).mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockResponse,
-    });
+    (submitReasonRequest as jest.Mock).mockResolvedValueOnce(mockResponse);
 
     render(<Home />);
-    
+
+    await waitFor(() => {
+      expect(screen.getByText('Test Identity (v1)')).toBeInTheDocument();
+    });
+
     const textarea = screen.getByPlaceholderText(/Enter your reasoning query.../i);
     fireEvent.change(textarea, { target: { value: 'Rotate sigil' } });
     fireEvent.click(screen.getByText(/🚀 Submit/i));
 
     await waitFor(() => {
-      expect(screen.getByText(/Refined Output \(Identity‑Aligned\)/i)).toBeInTheDocument();
+      expect(screen.getByText(/Refined Answer — Identity Aligned/i)).toBeInTheDocument();
       expect(screen.getByText(/Refined good output/i)).toBeInTheDocument();
     });
   });
