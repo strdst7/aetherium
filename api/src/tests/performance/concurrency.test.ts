@@ -49,10 +49,10 @@ describe("Concurrency Safety", () => {
     identityBinding.clearCache();
   });
 
-  function createOrchestrator(options?: {
+  async function createOrchestrator(options?: {
     mockResponseText?: string;
     maxAttempts?: number;
-  }): Orchestrator {
+  }): Promise<Orchestrator> {
     const mockProvider = new MockProviderFactory({
       deterministic: true,
       responseText: options?.mockResponseText ?? "Mock generated response",
@@ -60,6 +60,7 @@ describe("Concurrency Safety", () => {
     registry.register(mockProvider, 0, ["local", "embeddings"]);
 
     const anchorLoader = new SymbolicAnchorLoader();
+    await anchorLoader.load();
     const mythicModule = new MythicModule(anchorLoader);
     const constraintEngine = new IdentityConstraintEngine();
     const sovereignHalo = new SovereignHaloService(constraintEngine, mythicModule, {
@@ -107,7 +108,7 @@ describe("Concurrency Safety", () => {
       identityA.id
     );
 
-    const orchestrator = createOrchestrator();
+    const orchestrator = await createOrchestrator();
 
     // Fire 3 concurrent requests, one for each identity
     const requests: OrchestratorRequest[] = [
@@ -169,7 +170,7 @@ describe("Concurrency Safety", () => {
     });
 
     // Mock provider returns text containing both "jargon" and "slang"
-    const orchestrator = createOrchestrator({
+    const orchestrator = await createOrchestrator({
       mockResponseText:
         "This response has jargon and also some slang like cool beans.",
       maxAttempts: 1,
@@ -227,7 +228,7 @@ describe("Concurrency Safety", () => {
       config: { preferredProvider: "gemini" },
     });
 
-    const orchestrator = createOrchestrator();
+    const orchestrator = await createOrchestrator();
 
     // Fire 2 concurrent generation requests
     const requests: OrchestratorRequest[] = [
@@ -281,7 +282,7 @@ describe("Concurrency Safety", () => {
     );
 
     // Map scenario request identity anchors to real DB identity IDs
-    const orchestrator = createOrchestrator();
+    const orchestrator = await createOrchestrator();
 
     const requests: OrchestratorRequest[] = scenario.requests.map((req, i) => ({
       identity_anchor: dbIdentities[i % dbIdentities.length].id,
