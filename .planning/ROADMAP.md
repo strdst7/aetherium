@@ -82,7 +82,13 @@ Plans:
   3. Developer can retrieve an identity by ID, list all identities, and update an existing identity via REST API
   4. Identity updates preserve immutable version history (previous versions remain accessible)
   5. Invalid identity definitions are rejected with clear validation errors
-**Plans**: TBD
+**Plans**: 4 plans in 4 waves
+
+Plans:
+- [ ] 04-01-PLAN.md — Identity Schema & Service (SigilIdentity types + IdentityService + MongoDB indexes + unit tests)
+- [ ] 04-02-PLAN.md — Identity Registration & Retrieval API (POST /identity/register, GET /identity/{id}, GET /identity + validation + controller tests)
+- [ ] 04-03-PLAN.md — Identity Update & Version History (PUT /identity/{id}, GET /identity/{id}/versions + immutable snapshot versioning + tests)
+- [ ] 04-04-PLAN.md — API Contracts, OpenAPI & Integration (api-contracts.ts re-exports, openapi.yml schemas, index.ts bootstrap, integration tests)
 
 ### Phase 5: Identity-Bound Reasoning
 **Goal**: Orchestrator loads and enforces the active identity at every reasoning step without cross-identity leakage  
@@ -177,7 +183,7 @@ Plans:
 | 1. Agent Core Foundation | 0/5 | Not started | - |
 | 2. Agent Task Engine | 6/6 | Planned | - |
 | 3. Agent Interface & Contracts | 0/4 | Planned | - |
-| 4. Identity Registration & Persistence | 0/7 | Not started | - |
+| 4. Identity Registration & Persistence | 4/4 | Planned | - |
 | 5. Identity-Bound Reasoning | 0/7 | Not started | - |
 | 6. Mythic Module | 0/6 | Not started | - |
 | 7. Sovereign Halo | 0/6 | Not started | - |
