@@ -44,7 +44,7 @@ progress:
 | Field | Value |
 |-------|-------|
 | Phase | 10 |
-| Plan | 03 |
+| Plan | 04 |
 | Status | Complete |
 
 **Progress:**
@@ -59,7 +59,8 @@ progress:
 - Plan 01 complete (Test Infrastructure & Fixtures)
 - Plan 02 complete (Full Pipeline Integration Test)
 - Plan 03 complete (Identity Consistency & Backward Compatibility)
-- Next action: Execute Phase 10 Plan 04 (Real Provider E2E Tests)
+- Plan 04 complete (Real Provider E2E Tests)
+- Next action: Execute Phase 10 Plan 05 (Web E2E & Final Integration)
 
 ---
 
@@ -217,6 +218,13 @@ progress:
   - `backward-compat.extended.test.ts` with 6 tests: minimal request, Phase 1-3/4-9 fields, version rejection, endpoint preservation, field preservation
   - `cross-identity-leakage.test.ts` with 5 tests: memory shard isolation, orchestrator memory scoping, constraint contamination prevention, multi-agent council isolation, audit record isolation
   - All 15 integration tests pass; no existing tests broken
+- **Plan 04 — Real Provider E2E Tests:** Complete
+  - `env-checker.ts` with `checkRequiredEnvVars()` and custom validator support
+  - `real-provider-guard.ts` with `guardRealProviderTests()`, `describeIfRealProvider()`, `itIfRealProvider()`
+  - `.env.test.example` documenting GEMINI_API_KEY, MONGODB_URI, REDIS_URL, FORCE_REAL_PROVIDER_TESTS
+  - `real-provider.e2e.test.ts` with 4 E2E tests (direct generation, full pipeline, identity shaping, failover) plus 3 guard utility tests
+  - Updated `jest.config.js` to ignore `*.e2e.test.ts` by default
+  - Tests skip gracefully when credentials missing; attempt execution with fake key (proving guard works)
 
 ### Blockers
 
@@ -230,7 +238,7 @@ _None._
 |-------|-------|
 | Last command | `/gsd-execute-phase 10` |
 | Context window health | Healthy |
-| Files changed this session | `api/src/tests/consistency.integration.test.ts`, `api/src/tests/backward-compat.extended.test.ts`, `api/src/tests/cross-identity-leakage.test.ts`, `.planning/phases/10-end-to-end-integration/10-03-SUMMARY.md`, `.planning/STATE.md`, `.planning/ROADMAP.md` |
+| Files changed this session | `api/src/tests/helpers/env-checker.ts`, `api/src/tests/helpers/real-provider-guard.ts`, `api/src/tests/real-provider.e2e.test.ts`, `api/.env.test.example`, `api/jest.config.js`, `.planning/phases/10-end-to-end-integration/10-04-SUMMARY.md`, `.planning/STATE.md`, `.planning/ROADMAP.md` |
 
 ---
 *State initialized: 2026-06-06*
