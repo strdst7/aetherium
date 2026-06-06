@@ -46,7 +46,15 @@ Plans:
   1. Agent decomposes a natural-language request into a planned sequence of steps
   2. Agent executes tools, synthesizes results, and produces actionable output (reports, record updates, workflow triggers)
   3. Agent successfully solves the intelligent MongoDB assistant challenge end-to-end
-**Plans**: TBD
+**Plans**: 6 plans in 4 waves
+
+Plans:
+- [ ] 02-01-PLAN.md — Task Schema & Types (PlanStep, TaskPlan, Action, ActionType, PlanStatus + ReasonResponse/ReasonRequest extensions)
+- [ ] 02-02-PLAN.md — Orchestrator Plan Generation (generatePlan method with validation and error handling)
+- [ ] 02-03-PLAN.md — AgentBuilder Task Execution (executeTask with plan-then-execute, retry logic, action synthesis)
+- [ ] 02-04-PLAN.md — Mock & Test Infrastructure (MockAgentBuilder.executeTask, MockMCPServer update tool, mock tests)
+- [ ] 02-05-PLAN.md — Controller & API Integration (mode routing, auto-detection, POST /v1/reason task mode support)
+- [ ] 02-06-PLAN.md — MongoDB Assistant Demo (seed-demo-data.ts, integration test for query + update pipeline)
 
 ### Phase 3: Agent Interface & Contracts
 **Goal**: Agent exposes a stable natural-language API and returns structured, versioned responses  
@@ -161,7 +169,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Agent Core Foundation | 0/5 | Not started | - |
-| 2. Agent Task Engine | 0/5 | Not started | - |
+| 2. Agent Task Engine | 6/6 | Planned | - |
 | 3. Agent Interface & Contracts | 0/4 | Not started | - |
 | 4. Identity Registration & Persistence | 0/7 | Not started | - |
 | 5. Identity-Bound Reasoning | 0/7 | Not started | - |

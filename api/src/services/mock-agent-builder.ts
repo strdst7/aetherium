@@ -1,8 +1,9 @@
-import { AgentBuilder, AgentBuilderConfig, AgentBuilderResult } from "./agent-builder";
+import { AgentBuilderConfig, AgentBuilderResult } from "./agent-builder";
 import { ReasonRequest } from "../controllers/reason";
-import { ToolCall, ToolExecutionResult } from "../adapters/ai-adapter";
+import { ToolCall } from "../adapters/ai-adapter";
+import { ToolExecutionResult } from "./mcp-client";
 
-export class MockAgentBuilder implements AgentBuilder {
+export class MockAgentBuilder {
   private mockTools: any[];
 
   constructor(mockTools: any[] = []) {

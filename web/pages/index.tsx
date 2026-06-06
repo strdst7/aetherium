@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 interface ReasoningResponse {
   id: string;
@@ -30,6 +30,14 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState<ReasoningResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const resultRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (response && resultRef.current) {
+      resultRef.current.focus();
+    }
+  }, [response]);
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -84,6 +92,10 @@ export default function Home() {
       <header style={styles.header}>
         <h1 style={styles.title}>⚡ Aetherium Reasoning Shell</h1>
         <p style={styles.subtitle}>Intelligently grounded reasoning with reflective validation</p>
+        <div style={{ marginTop: '10px' }}>
+          <button onClick={() => fetch(`${apiUrl}/api/forceFail?on=true`)} style={styles.demoButton}>Simulate Provider Failure</button>
+          <button onClick={() => fetch(`${apiUrl}/api/forceFail?on=false`)} style={styles.demoButton}>Restore Provider</button>
+        </div>
       </header>
 
       <main style={styles.main}>
@@ -151,13 +163,58 @@ export default function Home() {
 
         {/* Response Section */}
         {response && (
-          <section style={styles.section}>
-            <div style={styles.statusBadge} data-status={response.status}>
-              Status: {response.status.toUpperCase()}
+          <section 
+            style={styles.section} 
+            aria-live="polite"
+            ref={resultRef}
+            tabIndex={-1}
+          >
+            <div 
+              style={{
+                ...styles.statusBadge,
+                backgroundColor: response.status === 'approved' ? '#d4edda' : response.status === 'refine' ? '#fff3cd' : '#f8d7da',
+                color: response.status === 'approved' ? '#155724' : response.status === 'refine' ? '#856404' : '#721c24',
+                border: `1px solid ${response.status === 'approved' ? '#c3e6cb' : response.status === 'refine' ? '#ffeeba' : '#f5c6cb'}`
+              }}
+            >
+              Reflective Verdict: {response.status.toUpperCase()}
             </div>
 
-            <h2>Output</h2>
-            <div style={styles.output}>{response.output}</div>
+            <div style={{ marginTop: 20 }}>
+              <h2>Candidate Output</h2>
+              <div style={{ ...styles.output, boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>{response.output}</div>
+
+              <h2>Reflective Result</h2>
+              <div 
+                style={{ 
+                  ...styles.contextBox, 
+                  borderLeft: `6px solid ${response.status === 'approved' ? '#28a745' : response.status === 'refine' ? '#ffc107' : '#dc3545'}`,
+                }}
+              >
+                {response.status === 'refine' && (
+                  <p style={{ color: '#dc3545', fontWeight: 'bold', marginBottom: '10px' }}>
+                    Identity Violation — action blocked
+                  </p>
+                )}
+                <pre style={{ whiteSpace: 'pre-wrap', fontSize: '0.9em' }}>
+                  {JSON.stringify(response.reasoning.reflective, null, 2)}
+                </pre>
+              </div>
+
+              {response.metadata?.refinedCandidate && (
+                <>
+                  <h2 style={{ color: '#27ae60' }}>Refined Answer — Identity Aligned</h2>
+                  <div style={{ ...styles.output, borderLeftColor: '#27ae60', backgroundColor: '#f0fff4', border: '2px solid #27ae60' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                      <span style={{ fontSize: '0.8em', backgroundColor: '#27ae60', color: 'white', padding: '2px 8px', borderRadius: '12px' }}>
+                        Aligned with Sigil Law
+                      </span>
+                    </div>
+                    {response.metadata.refinedCandidate.text}
+                  </div>
+                </>
+              )}
+            </div>
 
             {/* Orchestrator Context */}
             <h3>🧠 Orchestrator Context</h3>
@@ -185,13 +242,13 @@ export default function Home() {
               <p><strong>Status:</strong> {response.reasoning.reflective.status}</p>
               <p><strong>Confidence:</strong> {(response.reasoning.reflective.confidenceScore * 100).toFixed(0)}%</p>
 
-              {response.reasoning.reflective.violations.length > 0 && (
+              {response.reasoning.reflective?.violations?.length > 0 && (
                 <div>
                   <strong>Violations ({response.reasoning.reflective.violations.length}):</strong>
                   {response.reasoning.reflective.violations.map((v, i) => (
                     <div key={i} style={styles.violation}>
                       <span style={{ color: v.severity === 'error' ? '#e74c3c' : '#f39c12' }}>
-                        [{v.severity.toUpperCase()}]
+                        [{v.severity?.toUpperCase() || 'INFO'}]
                       </span>
                       {' '}{v.message}
                     </div>
@@ -199,7 +256,7 @@ export default function Home() {
                 </div>
               )}
 
-              {response.reasoning.reflective.suggestedConstraints.length > 0 && (
+              {response.reasoning.reflective?.suggestedConstraints?.length > 0 && (
                 <div>
                   <strong>Suggested Constraints:</strong>
                   {response.reasoning.reflective.suggestedConstraints.map((c, i) => (
@@ -267,6 +324,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '20px',
     borderRadius: '8px',
     boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+    transition: 'all 0.42s cubic-bezier(0.2, 0.8, 0.2, 1)',
   },
   error: {
     borderLeft: '4px solid #e74c3c',
@@ -290,6 +348,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: '4px',
     fontSize: '1em',
     fontFamily: 'inherit',
+    transition: 'border-color 0.18s cubic-bezier(0.2, 0.8, 0.2, 1)',
   },
   textarea: {
     padding: '10px',
@@ -298,6 +357,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '1em',
     fontFamily: 'inherit',
     resize: 'vertical',
+    transition: 'border-color 0.18s cubic-bezier(0.2, 0.8, 0.2, 1)',
   },
   button: {
     padding: '12px 20px',
@@ -308,7 +368,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '1.05em',
     fontWeight: 600,
     cursor: 'pointer',
-    transition: 'background-color 0.3s',
+    transition: 'all 0.18s cubic-bezier(0.2, 0.8, 0.2, 1)',
   },
   demoSection: {
     marginTop: '20px',

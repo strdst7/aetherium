@@ -1,4 +1,5 @@
 import { MongoClient, Db, Collection } from "mongodb";
+import { ProviderRegistryInstance } from "./provider-registry";
 
 export interface MemoryDocument {
   _id?: string;
@@ -115,6 +116,24 @@ export class MemoryService {
       throw new Error("Memory service not connected");
     }
     await this.collection.deleteMany({});
+  }
+
+  async getAll(): Promise<MemoryDocument[]> {
+    if (!this.collection) {
+      throw new Error("Memory service not connected");
+    }
+    return this.collection.find({}).toArray();
+  }
+
+  async embedQuery(text: string): Promise<number[]> {
+    const provider = ProviderRegistryInstance.defaultProvider;
+    if (!provider.embed) {
+      throw new Error("Default provider does not support embeddings");
+    }
+    const result = await provider.embed(text);
+    return Array.isArray(result.embeddings[0]) 
+      ? (result.embeddings[0] as number[]) 
+      : (result.embeddings as number[]);
   }
 }
 

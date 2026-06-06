@@ -1,0 +1,24 @@
+name: Identity Compliance
+
+on:
+  pull_request:
+    paths:
+      - "web/components/**"
+      - "design/sigil/**"
+      - "design/tokens/**"
+      - "tools/sigil-validate.js"
+
+jobs:
+  validate-identity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Run Sigil Validation
+        run: |
+          node tools/sigil-validate.js web/components

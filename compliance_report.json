@@ -1,0 +1,15 @@
+{
+  "compliance_score": 0,
+  "violations": [
+    {
+      "rule": "RULE_COLOR_PALETTE",
+      "message": "Forbidden color #ff0000 detected",
+      "file": "web/components/BadSigil.svg"
+    },
+    {
+      "rule": "RULE_GEO_INTEGRITY",
+      "message": "Rotation transform detected",
+      "file": "web/components/BadSigil.svg"
+    }
+  ]
+}
