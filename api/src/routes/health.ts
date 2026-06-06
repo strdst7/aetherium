@@ -39,7 +39,14 @@ export function createHealthRouter(
     if (options?.providerRegistry) {
       try {
         const providers = options.providerRegistry.listProviders?.() || [];
-        const healthy = providers.some((p: any) => p.healthCheck?.().ok);
+        let healthy = false;
+        for (const p of providers) {
+          const result = await p.healthCheck?.();
+          if (result && result.ok) {
+            healthy = true;
+            break;
+          }
+        }
         if (!healthy && providers.length > 0) {
           checks.llm = "error";
         }
