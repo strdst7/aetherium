@@ -29,18 +29,18 @@
 
 | Field | Value |
 |-------|-------|
-| Phase | 7 |
+| Phase | 10 |
 | Plan | — |
-| Status | Ready to execute |
+| Status | Planned |
 
 **Progress:**
 ```
-[██████░░░░░░░░░░░░░░] 55% (6/11 phases planned, 0 executed)
+[██████████░░░░░░░░░░] 82% (9/11 phases planned, 10/11)
 ```
 
 **Current Focus:**
-- Phase 7 planned — Sovereign Halo (6 plans in 4 waves)
-- Next action: Execute Phase 7
+- Phase 10 planned — End-to-End Integration & Testing (5 plans in 3 waves ready to execute)
+- Next action: Execute Phase 10 plans
 
 ---
 
@@ -54,6 +54,9 @@
 | 4 | Identity Registration & Persistence | 2026-06-06 | Complete |
 | 5 | Identity-Bound Reasoning | 2026-06-06 | Complete |
 | 6 | Mythic Module | 2026-06-06 | Complete |
+| 7 | Sovereign Halo | 2026-06-06 | Complete |
+| 8 | Audit & Immutability | 2026-06-06 | Complete |
+| 9 | Web UI Extensions | 2026-06-06 | Complete |
 
 ### Phase 1 Summary
 - **Gemini Provider Integration:** Extended AIProvider with tool-use, implemented GeminiProvider, registered with priority 0
@@ -142,7 +145,29 @@
 - [x] Plan Phase 6 (Mythic Module)
 - [x] Execute Phase 6 (Mythic Module)
 - [x] Plan Phase 7 (Sovereign Halo)
-- [ ] Execute Phase 7 (Sovereign Halo)
+- [x] Execute Phase 7 (Sovereign Halo)
+- [x] Plan Phase 8 (Audit & Immutability)
+- [x] Execute Phase 8 (Audit & Immutability)
+- [x] Plan Phase 9 (Web UI Extensions)
+- [x] Execute Phase 9 (Web UI Extensions)
+- [x] Plan Phase 10 (End-to-End Integration & Testing)
+- [ ] Execute Phase 10 (End-to-End Integration & Testing)
+
+### Phase 8 Summary
+- **Audit Types & Contracts:** Created AuditRecord, AuditQuery, AuditPagination, AuditProvenance, AuditListResponse types with SHA-256 hash for tamper detection
+- **Audit Service:** Implemented AuditService with save, query, generateHash, ensureIndexes — best-effort semantics (non-blocking)
+- **Audit API & Controller:** Created GET /audit endpoint with query validation (identity_id, date range, pagination) — no write/delete endpoints
+- **Orchestrator Integration:** Updated Orchestrator to save audit records after every generation with full provenance
+- **Integration Tests:** Verified backward compatibility with all existing tests passing (293/302)
+
+### Phase 9 Summary
+- **Shared UI Infrastructure:** Created `web/src/types/api.ts` (shared API types), `web/src/lib/api-client.ts` (fetch wrapper), `web/components/IdentitySelector.tsx` (reusable dropdown), `web/components/Layout.tsx` (shared layout with nav)
+- **Identity Registration Page:** Created `web/components/IdentityForm.tsx` (full registration form) and `web/pages/identity/register.tsx` (registration page)
+- **Reasoning Trace Component:** Created `web/components/ReasoningTrace.tsx` (expandable step-by-step trace display)
+- **Validation Report Component:** Created `web/components/ValidationReport.tsx` (pass/fail metrics, check list, confidence scoring)
+- **Memory Inspection Enhancement:** Updated `api/src/controllers/memory.ts` with identity-scoped endpoints, `web/pages/memory.tsx` with identity filter and Layout
+- **Identity Test Page:** Refactored `web/pages/index.tsx` to use IdentitySelector, submitReasonRequest, ReasoningTrace, and ValidationReport
+- **Tests:** Created component tests for IdentityForm (4), ReasoningTrace (3), ValidationReport (3), updated index.test.tsx (3); all 13 web tests pass
 
 ### Blockers
 
@@ -154,9 +179,9 @@ _None._
 
 | Field | Value |
 |-------|-------|
-| Last command | `/gsd-execute-phase 5` |
+| Last command | `/gsd-execute-phase 9` |
 | Context window health | Healthy |
-| Files changed this session | `api/src/services/identity-binding.ts`, `api/src/services/identity-constraints.ts`, `api/src/services/memory-service.ts`, `api/src/services/orchestrator.ts`, `api/src/services/multi-agent-orchestrator.ts`, `api/src/controllers/reason.ts`, `api/src/index.ts` |
+| Files changed this session | `web/src/types/api.ts`, `web/src/lib/api-client.ts`, `web/components/IdentitySelector.tsx`, `web/components/Layout.tsx`, `web/components/IdentityForm.tsx`, `web/pages/identity/register.tsx`, `web/components/ReasoningTrace.tsx`, `web/components/ValidationReport.tsx`, `web/pages/memory.tsx`, `web/pages/index.tsx`, `api/src/controllers/memory.ts`, `web/components/IdentityForm.test.tsx`, `web/components/ReasoningTrace.test.tsx`, `web/components/ValidationReport.test.tsx`, `web/src/index.test.tsx` |
 
 ---
 *State initialized: 2026-06-06*
