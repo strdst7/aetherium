@@ -12,8 +12,8 @@
 - [ ] **Phase 4: Identity Registration & Persistence** — SigilIdentity CRUD API with immutable version history
 - [ ] **Phase 5: Identity-Bound Reasoning** — Orchestrator enforces identity constraints at every reasoning step
 - [x] **Phase 6: Mythic Module** — Identity "soul" that shapes tone, voice, and symbolic context
-- [ ] **Phase 7: Sovereign Halo** — Output validation and enforcement layer with regeneration logic
-- [ ] **Phase 8: Audit & Immutability** — Complete append-only audit trail for every generation
+- [x] **Phase 7: Sovereign Halo** — Output validation and enforcement layer with regeneration logic
+- [x] **Phase 8: Audit & Immutability** — Complete append-only audit trail for every generation
 - [ ] **Phase 9: Web UI Extensions** — Visual identity management, testing, and inspection pages
 - [ ] **Phase 10: End-to-End Integration & Testing** — Full pipeline validation and backward compatibility
 - [ ] **Phase 11: Performance Hardening & Documentation** — Latency validation, concurrency safety, and integrator docs
@@ -164,7 +164,17 @@ Plans:
   4. Validation report from Sovereign Halo (pass/fail, rule checks) is visible on each generation result
   5. Web UI has a "Memory Inspection" page showing memory shards filtered to the selected identity
   6. Active identity can be selected from a dropdown on all generation and inspection pages
-**Plans**: TBD
+**Plans**: 7 plans in 4 waves
+
+Plans:
+- [ ] 09-01-PLAN.md — Shared UI Infrastructure & Design Tokens (types, API client, IdentitySelector, Layout)
+- [ ] 09-02-PLAN.md — Identity Registration Page (form + page for UI-01)
+- [ ] 09-03-PLAN.md — Reasoning Trace Component (expandable step-by-step display for UI-03)
+- [ ] 09-04-PLAN.md — Validation Report Display & API Contract (Sovereign Halo report UI + API update for UI-04)
+- [ ] 09-05-PLAN.md — Memory Inspection Page with Identity Filter (scoped memory shards for UI-05)
+- [ ] 09-06-PLAN.md — Identity Test Page (refactored reasoning shell using shared components for UI-02 + UI-06)
+- [ ] 09-07-PLAN.md — Integration, Navigation & Tests (global identity context, nav, Jest tests)
+
 **UI hint**: yes
 
 ### Phase 10: End-to-End Integration & Testing
@@ -201,8 +211,8 @@ Plans:
 | 4. Identity Registration & Persistence | 4/4 | Complete | 2026-06-06 |
 | 5. Identity-Bound Reasoning | 6/6 | Complete | 2026-06-06 |
 | 6. Mythic Module | 5/5 | Complete | 2026-06-06 |
-| 7. Sovereign Halo | 0/6 | Not started | - |
-| 8. Audit & Immutability | 0/5 | Not started | - |
+| 7. Sovereign Halo | 6/6 | Complete | 2026-06-06 |
+| 8. Audit & Immutability | 4/4 | Complete | 2026-06-06 |
 | 9. Web UI Extensions | 0/7 | Not started | - |
 | 10. End-to-End Integration & Testing | 0/5 | Not started | - |
 | 11. Performance Hardening & Documentation | 0/5 | Not started | - |
