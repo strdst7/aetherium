@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: in_progress
-last_updated: "2026-06-06T11:28:39.000Z"
+status: complete
+last_updated: "2026-06-06T11:35:00.000Z"
 progress:
   total_phases: 11
-  completed_phases: 10
+  completed_phases: 11
   total_plans: 51
-  completed_plans: 35
-  percent: 93
+  completed_plans: 51
+  percent: 100
 ---
 
 # STATE: Aetherium
@@ -18,7 +18,7 @@ progress:
 **Core Value:** A developer can register an identity and reliably get identity-consistent outputs from an LLM across sessions, tasks, and agents.  
 **Mode:** yolo (auto-approve)  
 **Granularity:** Fine  
-**Last updated:** 2026-06-06 (after 11-03 execution)
+**Last updated:** 2026-06-06 (after 11-05 execution — Phase 11 complete)
 
 ---
 
@@ -45,29 +45,31 @@ progress:
 |-------|-------|
 | Phase | 11 |
 | Plan | 05 |
-| Status | In Progress (4/5 plans complete, Wave 3) |
+| Status | Complete (51/51 plans complete, all phases done) |
 
 **Progress:**
 
 ```
-[███████████░░░░░░░░░] 93% (10/11 phases complete, 10/11)
+[█████████████████████] 100% (11/11 phases complete, 51/51 plans)
 ```
 
 **Current Focus:**
 
-- Phase 11 in progress — Performance Hardening & Documentation
+- Phase 11 COMPLETE — Performance Hardening & Documentation
 - Plan 01 complete: Performance Benchmarking Infrastructure
 - Plan 02 complete: Latency Validation Tests
 - Plan 03 complete: Concurrency & Load Safety Tests
 - Plan 04 complete: API Documentation & Examples
+- Plan 05 complete: Deployment Guide & Final Verification
 - 348 tests passing across API (328) and Web (20)
 - Identity binding latency: ≤108ms (measured in pipeline test); p99 ≤1ms (measured in benchmark)
-- p99 full pipeline latency: ~5.1ms (mock provider, well under 5s target)
-- p99 Sovereign Halo validation: ~8.6ms (well under 1s target)
+- p99 full pipeline latency: ~3.99ms (mock provider, well under 5s target)
+- p99 Sovereign Halo validation: ~0.01ms (well under 1s target)
 - Cross-identity memory leakage: 0 (verified sequential and concurrent)
 - Audit record immutability: 100% (verified sequential and concurrent)
-- Concurrent load (10 requests, 5 identities): ~66ms batch time, all complete without errors
-- Next action: Execute Plan 05 (Deployment Guide & Final Verification)
+- Concurrent load (10 requests, 5 identities): ~54ms batch time, all complete without errors
+- Deployment guide complete (324 lines), README complete (115 lines)
+- All Phase 11 deliverables verified
 
 ---
 
@@ -142,9 +144,13 @@ progress:
 | Metric | Target | Current |
 |--------|--------|---------|
 | Identity lookup + rule application latency | ≤200ms | ≤108ms (measured in pipeline.integration.test.ts) |
-| p99 generation latency | <5s | ~5.1ms (mock provider, well under target) |
-| Cross-identity memory leakage | 0 | 0 (verified in pipeline.integration.test.ts) |
-| Audit record immutability | 100% | 100% (verified in audit-integration.test.ts) |
+| p99 generation latency | <5s | ~3.99ms (mock provider, well under target) |
+| p99 full pipeline latency | <5000ms | ~3.99ms (latency.test.ts) |
+| p99 identity binding latency | ≤200ms | ~0.002ms (latency.test.ts) |
+| p99 Sovereign Halo validation | <1000ms | ~0.010ms (latency.test.ts) |
+| Cross-identity memory leakage | 0 | 0 (verified in pipeline and concurrency tests) |
+| Audit record immutability | 100% | 100% (verified in pipeline and concurrency tests) |
+| Concurrent load stability | No errors | ~54ms batch, 0 errors (concurrency.test.ts) |
 
 ---
 
@@ -268,6 +274,15 @@ progress:
   - Constraint isolation verified: concurrent identity constraints do not contaminate each other
   - Audit isolation verified: audit records strictly scoped under concurrent load
   - Moderate load test: 10 requests across 5 identities complete in ~66ms with zero errors
+- **Plan 04 — API Documentation & Examples:** Complete
+  - Enriched `api/openapi.yml` with examples under all 12 public endpoints
+  - Created `docs/API_INTEGRATION.md` (577 lines) with curl and fetch examples
+  - Added 11 new schemas to OpenAPI spec without modifying existing definitions
+- **Plan 05 — Deployment Guide & Final Verification:** Complete
+  - Created `docs/DEPLOYMENT.md` (324 lines) with local, Docker Compose, cloud options, env reference, troubleshooting
+  - Updated `README.md` from 1-line placeholder to 115-line project overview
+  - Created `11-VERIFICATION.md` confirming all performance tests pass and documentation complete
+  - All 7 performance tests pass (3 latency, 4 concurrency)
 
 ### Blockers
 
@@ -281,7 +296,7 @@ _None._
 |-------|-------|
 | Last command | `/gsd-execute-phase 11` |
 | Context window health | Healthy |
-| Files changed this session | `api/src/tests/performance/concurrency.test.ts`, `.planning/phases/11-performance-hardening/11-03-SUMMARY.md`, `.planning/STATE.md`, `.planning/ROADMAP.md` |
+| Files changed this session | `docs/DEPLOYMENT.md`, `README.md`, `.planning/phases/11-performance-hardening/11-VERIFICATION.md`, `.planning/phases/11-performance-hardening/11-05-SUMMARY.md`, `.planning/STATE.md`, `.planning/ROADMAP.md` |
 
 ---
 *State initialized: 2026-06-06*
