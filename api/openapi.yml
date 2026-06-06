@@ -1853,5 +1853,4 @@ components:
       scheme: bearer
       description: Bearer token for authentication
 
-security:
-  - bearerAuth: []
+security: []
