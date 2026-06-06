@@ -196,7 +196,25 @@ Plans:
   2. Identity consistency test passes: the same prompt submitted twice returns outputs with identical tone, worldview, and symbolic anchors
   3. All existing API contracts from the brownfield codebase remain backward-compatible (additive changes only)
   4. End-to-end tests pass against both mocked LLM providers and real Gemini / Vertex AI instances
-**Plans**: TBD
+**Plans**: 5 plans in 3 waves
+
+Plans:
+- [ ] 10-01-PLAN.md — Test Infrastructure & Fixtures (shared factories, mock provider, test database helper)
+- [ ] 10-02-PLAN.md — Full Pipeline Integration Test (register → generate → audit end-to-end)
+- [ ] 10-03-PLAN.md — Identity Consistency & Backward Compatibility (deterministic outputs, API compat, leakage tests)
+- [ ] 10-04-PLAN.md — Real Provider E2E Tests (Gemini/Vertex AI with skip guards)
+- [ ] 10-05-PLAN.md — Web E2E & Final Integration (health checks, web API tests, CI pipeline)
+
+**Wave dependency notes:**
+- **Wave 1** — 10-01, 10-02 (no blockers; infrastructure + full pipeline test)
+- **Wave 2** *(blocked on Wave 1 completion)* — 10-03, 10-04 (needs fixtures and pipeline test infrastructure)
+- **Wave 3** *(blocked on Wave 2 completion)* — 10-05 (needs all prior tests to validate CI pipeline)
+
+**Cross-cutting constraints:**
+- All integration tests must use test database helper (no production DB connections)
+- Mock provider factory must never call real LLM APIs
+- Real provider tests must skip gracefully when credentials are missing
+- All tests must be independent (database reset between tests)
 
 ### Phase 11: Performance Hardening & Documentation
 **Goal**: System meets performance constraints, handles concurrent load safely, and is fully documented for API integrators  
@@ -224,7 +242,7 @@ Plans:
 | 7. Sovereign Halo | 6/6 | Complete | 2026-06-06 |
 | 8. Audit & Immutability | 4/4 | Complete | 2026-06-06 |
 | 9. Web UI Extensions | 7/7 | Complete | 2026-06-06 |
-| 10. End-to-End Integration & Testing | 0/5 | Not started | - |
+| 10. End-to-End Integration & Testing | 5/5 | Planned | 2026-06-06 |
 | 11. Performance Hardening & Documentation | 0/5 | Not started | - |
 
 ---
