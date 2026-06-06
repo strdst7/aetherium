@@ -221,11 +221,28 @@ Plans:
 **Depends on**: Phase 10  
 **Requirements**: (hardening phase — validates RE-06 performance constraint)  
 **Success Criteria** (what must be TRUE):
-  1. p99 latency for an identity-bound generation request is under 5 seconds total (including the ≤200ms identity overhead)
-  2. System handles multiple concurrent identity-bound requests without cross-identity memory leakage or context contamination
-  3. API documentation is complete with request/response examples for all public endpoints
-  4. Deployment guide covers Docker Compose local setup and cloud deployment options with environment configuration
-**Plans**: TBD
+   1. p99 latency for an identity-bound generation request is under 5 seconds total (including the ≤200ms identity overhead)
+   2. System handles multiple concurrent identity-bound requests without cross-identity memory leakage or context contamination
+   3. API documentation is complete with request/response examples for all public endpoints
+   4. Deployment guide covers Docker Compose local setup and cloud deployment options with environment configuration
+**Plans**: 5 plans in 3 waves
+
+Plans:
+- [ ] 11-01-PLAN.md — Performance Benchmarking Infrastructure (benchmark utilities + performance fixtures)
+- [ ] 11-02-PLAN.md — Latency Validation Tests (p99 pipeline <5s + identity overhead ≤200ms)
+- [ ] 11-03-PLAN.md — Concurrency & Load Safety Tests (parallel requests + memory leakage under load)
+- [ ] 11-04-PLAN.md — API Documentation & Examples (OpenAPI examples + API integration guide)
+- [ ] 11-05-PLAN.md — Deployment Guide & Final Verification (DEPLOYMENT.md + README + final checks)
+
+**Wave dependency notes:**
+- **Wave 1** — 11-01, 11-04 (no blockers; infrastructure + docs can proceed in parallel)
+- **Wave 2** *(blocked on Wave 1 completion)* — 11-02, 11-03 (needs benchmark utilities from 11-01)
+- **Wave 3** *(blocked on Wave 2 completion)* — 11-05 (needs test results and docs to finalize)
+
+**Cross-cutting constraints:**
+- All performance tests must use mock provider (no real API calls during benchmark)
+- Documentation must use realistic example values matching schema types
+- Deployment guide must not contain real secrets or credentials
 
 ---
 
@@ -243,7 +260,7 @@ Plans:
 | 8. Audit & Immutability | 4/4 | Complete | 2026-06-06 |
 | 9. Web UI Extensions | 7/7 | Complete | 2026-06-06 |
 | 10. End-to-End Integration & Testing | 5/5 | Complete | 2026-06-06 |
-| 11. Performance Hardening & Documentation | 0/5 | Not started | - |
+| 11. Performance Hardening & Documentation | 0/5 | Planned | - |
 
 ---
 
