@@ -172,6 +172,9 @@ describe("Extended Backward Compatibility", () => {
       expect(response).toHaveProperty(field);
     }
 
+    // apiVersion must match the current version constant
+    expect(response.apiVersion).toBe(CURRENT_API_VERSION);
+
     // Verify all optional Phase 1-3 fields are still present
     expect(response).toHaveProperty("toolCalls");
     expect(response).toHaveProperty("toolResults");
