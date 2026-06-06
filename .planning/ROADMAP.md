@@ -11,7 +11,7 @@
 - [ ] **Phase 3: Agent Interface & Contracts** — Natural-language API and structured response contracts
 - [ ] **Phase 4: Identity Registration & Persistence** — SigilIdentity CRUD API with immutable version history
 - [ ] **Phase 5: Identity-Bound Reasoning** — Orchestrator enforces identity constraints at every reasoning step
-- [ ] **Phase 6: Mythic Module** — Identity "soul" that shapes tone, voice, and symbolic context
+- [x] **Phase 6: Mythic Module** — Identity "soul" that shapes tone, voice, and symbolic context
 - [ ] **Phase 7: Sovereign Halo** — Output validation and enforcement layer with regeneration logic
 - [ ] **Phase 8: Audit & Immutability** — Complete append-only audit trail for every generation
 - [ ] **Phase 9: Web UI Extensions** — Visual identity management, testing, and inspection pages
@@ -132,7 +132,15 @@ Plans:
   3. If validation fails, the output is rejected and a regeneration is triggered with tightened constraints
   4. After 3 failed regeneration attempts, a structured failure report is returned instead of an unvalidated output
   5. Every output includes a validation report (pass/fail status, rule checks, confidence score)
-**Plans**: TBD
+**Plans**: 6 plans in 4 waves
+
+Plans:
+- [ ] 07-01-PLAN.md — Halo Types & Validation Contracts (ValidationReport, ValidationCheck, FailureReport, HaloValidationOptions)
+- [ ] 07-02-PLAN.md — Sovereign Halo Service Core (validation engine with forbidden behavior, tone deviation, symbolic drift checks)
+- [ ] 07-03-PLAN.md — Orchestrator Integration & Regeneration (wrap generation with 3-attempt regeneration loop and failure reporting)
+- [ ] 07-04-PLAN.md — API Contracts & Bootstrap Wiring (ReasonResponse with validationReport, OpenAPI schemas, Express bootstrap)
+- [ ] 07-05-PLAN.md — Multi-Agent Council Validation (per-agent validation in MultiAgentOrchestrator with regeneration)
+- [ ] 07-06-PLAN.md — Integration & Backward Compatibility (end-to-end tests, backward compat verification, AgentBuilder wiring)
 
 ### Phase 8: Audit & Immutability
 **Goal**: Complete, append-only audit trail captures every identity-bound generation with full provenance  
@@ -187,12 +195,12 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Agent Core Foundation | 0/5 | Not started | - |
-| 2. Agent Task Engine | 6/6 | Planned | - |
-| 3. Agent Interface & Contracts | 0/4 | Planned | - |
-| 4. Identity Registration & Persistence | 4/4 | Planned | - |
-| 5. Identity-Bound Reasoning | 0/7 | Not started | - |
-| 6. Mythic Module | 5/5 | Planned | - |
+| 1. Agent Core Foundation | 4/4 | Complete | 2026-06-06 |
+| 2. Agent Task Engine | 6/6 | Complete | 2026-06-06 |
+| 3. Agent Interface & Contracts | 4/4 | Complete | 2026-06-06 |
+| 4. Identity Registration & Persistence | 4/4 | Complete | 2026-06-06 |
+| 5. Identity-Bound Reasoning | 6/6 | Complete | 2026-06-06 |
+| 6. Mythic Module | 5/5 | Complete | 2026-06-06 |
 | 7. Sovereign Halo | 0/6 | Not started | - |
 | 8. Audit & Immutability | 0/5 | Not started | - |
 | 9. Web UI Extensions | 0/7 | Not started | - |
