@@ -269,12 +269,12 @@ describe("Concurrency Safety", () => {
   it("should complete all concurrent requests without errors under moderate load", async () => {
     const scenario = DEFAULT_CONCURRENCY_SCENARIO;
 
-    // Create identities in the database to match scenario
+    // Create identities in the database with unique developerIds
     const dbIdentities = await Promise.all(
-      scenario.identities.map((id) =>
+      scenario.identities.map((id, i) =>
         identityService.createIdentity({
           name: id.name,
-          developerId: id.developerId,
+          developerId: `moderate-load-${i}@test.com`,
           config: id.config,
         })
       )
