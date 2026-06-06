@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  api-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    services:
+      mongo:
+        image: mongo:6.0
+        ports:
+          - 27017:27017
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install API dependencies
+        run: cd api && npm ci
+
+      - name: Run API tests
+        run: cd api && npm test -- --coverage --passWithNoTests --detectOpenHandles --forceExit
+        env:
+          MONGODB_URI: mongodb://localhost:27017/aetherium_test
+
+      - name: Upload API coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-coverage
+          path: api/coverage/
+
+  web-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install web dependencies
+        run: cd web && npm ci
+
+      - name: Run web tests
+        run: cd web && npm test -- --coverage --passWithNoTests --forceExit --roots src
+
+      - name: Upload web coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-coverage
+          path: web/coverage/
