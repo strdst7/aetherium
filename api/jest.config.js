@@ -15,5 +15,6 @@ module.exports = {
   testPathIgnorePatterns: [
     "/node_modules/",
     ".*\\.real\\.test\\.ts$",
+    ".*\\.e2e\\.test\\.ts$",
   ],
 };
