@@ -3,6 +3,8 @@
 # Aetherium Cloud Run Deployment Script
 # Usage: ./deploy-cloud-run.sh <PROJECT_ID> <REGION>
 
+set -e # Exit on any error
+
 PROJECT_ID=$1
 REGION=${2:-asia-southeast1}
 SERVICE_NAME="aetherium-api"
