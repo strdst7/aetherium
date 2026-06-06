@@ -135,6 +135,9 @@ describe("Identity Consistency Integration", () => {
     // With deterministic provider and same identity, outputs should be identical
     expect(response1.text).toBe(response2.text);
 
+    // But response IDs should differ (proving two distinct calls were made)
+    expect(response1.id).not.toBe(response2.id);
+
     // Both outputs should contain formal/academic language markers
     // (the word "formal" is required by the constraint rule and present in mock text)
     expect(response1.text.toLowerCase()).toContain("formal");
@@ -170,6 +173,9 @@ describe("Identity Consistency Integration", () => {
 
     // With deterministic provider and same identity, outputs should be identical
     expect(response1.text).toBe(response2.text);
+
+    // Response IDs should differ between distinct calls
+    expect(response1.id).not.toBe(response2.id);
 
     // SymbolicAnchorLoader falls back to default anchors in test environment.
     // Default anchors may include "geometry", "ratio", "archetype".
