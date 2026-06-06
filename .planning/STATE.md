@@ -4,7 +4,7 @@
 **Core Value:** A developer can register an identity and reliably get identity-consistent outputs from an LLM across sessions, tasks, and agents.  
 **Mode:** yolo (auto-approve)  
 **Granularity:** Fine  
-**Last updated:** 2026-06-06 (after 10-01 execution)
+**Last updated:** 2026-06-06 (after 10-02 execution)
 
 ---
 
@@ -30,7 +30,7 @@
 | Field | Value |
 |-------|-------|
 | Phase | 10 |
-| Plan | 02 |
+| Plan | 03 |
 | Status | In Progress |
 
 **Progress:**
@@ -41,7 +41,8 @@
 **Current Focus:**
 - Phase 10 in progress — End-to-End Integration & Testing
 - Plan 01 complete (Test Infrastructure & Fixtures)
-- Next action: Execute Phase 10 Plan 02 (Full Pipeline Integration Test)
+- Plan 02 complete (Full Pipeline Integration Test)
+- Next action: Execute Phase 10 Plan 03 (Identity Consistency & Backward Compatibility)
 
 ---
 
@@ -108,10 +109,10 @@
 
 | Metric | Target | Current |
 |--------|--------|---------|
-| Identity lookup + rule application latency | ≤200ms | — |
+| Identity lookup + rule application latency | ≤200ms | ≤108ms (measured in pipeline.integration.test.ts) |
 | p99 generation latency | <5s | — |
-| Cross-identity memory leakage | 0 | — |
-| Audit record immutability | 100% | — |
+| Cross-identity memory leakage | 0 | 0 (verified in pipeline.integration.test.ts) |
+| Audit record immutability | 100% | 100% (verified in audit-integration.test.ts) |
 
 ---
 
@@ -179,6 +180,12 @@
   - `test-database.ts` with setup/teardown/reset and production-DB safety guard
   - `mock-provider-factory.ts` implementing AIProvider with deterministic and identity-aware modes
   - Updated `jest.config.js` with `@tests/*` alias, setupFilesAfterEnv, and real-test exclusion
+- **Plan 02 — Full Pipeline Integration Test:** Complete
+  - `setup.ts` with Jest global lifecycle (beforeAll/afterAll/beforeEach) managing TestDatabase
+  - `global.d.ts` for TypeScript awareness of `global.testDb`
+  - `pipeline.integration.test.ts` with 4 tests: full pipeline, identity constraints, memory scoping, latency ≤200ms
+  - `audit-integration.test.ts` with 4 tests: full fields, append-only, date range, SHA-256 hash
+  - All 8 integration tests pass against real MongoDB with wired service instances
 
 ### Blockers
 
@@ -192,7 +199,7 @@ _None._
 |-------|-------|
 | Last command | `/gsd-execute-phase 10` |
 | Context window health | Healthy |
-| Files changed this session | `api/src/tests/fixtures/identity-factory.ts`, `api/src/tests/fixtures/pipeline-fixtures.ts`, `api/src/tests/helpers/test-database.ts`, `api/src/tests/helpers/mock-provider-factory.ts`, `api/src/tests/setup.ts`, `api/jest.config.js`, `.planning/phases/10-end-to-end-integration/10-01-SUMMARY.md`, `.planning/STATE.md`, `.planning/ROADMAP.md` |
+| Files changed this session | `api/src/tests/setup.ts`, `api/src/tests/global.d.ts`, `api/src/tests/pipeline.integration.test.ts`, `api/src/tests/services/audit-integration.test.ts`, `.planning/phases/10-end-to-end-integration/10-02-SUMMARY.md`, `.planning/STATE.md`, `.planning/ROADMAP.md` |
 
 ---
 *State initialized: 2026-06-06*
