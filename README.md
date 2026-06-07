@@ -12,6 +12,7 @@
 
 
 
+
 Aetherium enables developers to register an identity and reliably get **identity-consistent outputs** from an LLM across sessions, tasks, and agents. The platform enforces identity constraints at every reasoning step, validates outputs against identity law, and maintains a complete audit trail — ensuring that AI-generated content always aligns with a registered identity's tone, voice, and values.
 
 ## Architecture
