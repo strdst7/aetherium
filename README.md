@@ -1,11 +1,16 @@
-# Aetherium
+# Aetherium 
+**Sovereign, Identity-First AI Intelligence Platform**  
 
-**Sovereign, Identity-First AI Intelligence Platform**
+![](https://img.shields.io/badge/Gemini-magenta)
+![](https://img.shields.io/badge/GoogleCloudAgentBuilder-yellow)
+![MongoDB!](https://img.shields.io/badge/MCPServer-MongoDB-red)
+[![License: ISC](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+![Status](https://img.shields.io/badge/status-production_ready-brightgreen)
 
-[![CI](https://github.com/aetherium/aetherium/actions/workflows/ci.yml/badge.svg)](https://github.com/aetherium/aetherium/actions/workflows/ci.yml)
-[![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](LICENSE)
 
----
+<img width="1536" height="1024" alt="BCO 226e545e-e25b-41ca-9e74-9006f9962a2a" src="https://github.com/user-attachments/assets/040ea809-fd30-4806-8f2d-777c0e1599bd" />
+
+
 
 Aetherium enables developers to register an identity and reliably get **identity-consistent outputs** from an LLM across sessions, tasks, and agents. The platform enforces identity constraints at every reasoning step, validates outputs against identity law, and maintains a complete audit trail — ensuring that AI-generated content always aligns with a registered identity's tone, voice, and values.
 
@@ -111,5 +116,6 @@ Tests are co-located with source files (`*.test.ts`). Performance tests are in `
 5. Update OpenAPI spec (`api/openapi.yml`) for any new endpoints
 
 ## License
+MIT
 
-ISC
+ ![](https://img.shields.io/badge/Miii&C.U-orange)
