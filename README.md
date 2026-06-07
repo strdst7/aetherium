@@ -115,7 +115,6 @@ Tests are co-located with source files (`*.test.ts`). Performance tests are in `
 4. API changes must be backward-compatible (additive only)
 5. Update OpenAPI spec (`api/openapi.yml`) for any new endpoints
 
-## License
-MIT
+
 
  ![](https://img.shields.io/badge/Miii&C.U-orange)
