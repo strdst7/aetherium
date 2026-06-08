@@ -17,6 +17,7 @@
 - [x] **Phase 9: Web UI Extensions** — Visual identity management, testing, and inspection pages
 - [x] **Phase 10: End-to-End Integration & Testing** — Full pipeline validation and backward compatibility
 - [x] **Phase 11: Performance Hardening & Documentation** — Latency validation, concurrency safety, and integrator docs
+- [ ] **Phase 12: MIII-AIM Brand Melody Injection** — MIII-AIM brand shade/hint across design tokens, mythic presets, UI elements, and infrastructure
 
 ---
 
@@ -244,6 +245,28 @@ Plans:
 - Documentation must use realistic example values matching schema types
 - Deployment guide must not contain real secrets or credentials
 
+### Phase 12: MIII-AIM Brand Melody Injection
+**Goal**: Aetherium carries a MIII-AIM brand "shade/hint" across design tokens, mythic voice presets, UI elements, and infrastructure — light touch, not full rollout
+**Depends on**: Phase 11
+**Requirements**: (post-roadmap extra phase — no formal REQUIREMENTS.md mapping)
+**Success Criteria** (what must be TRUE):
+  1. Design tokens in `design/sigil/v1.json` include MIII-AIM secondary (gold), obsidian, silver, and violet palettes with compliance rules
+  2. MythicModule accepts "sovereign" tone and "architectural" voice presets with text transformation functions
+  3. Web Layout header shows "⚡ Aetherium × MIII-AIM" with gold separator; footer shows "⊹ Powered by MIII-AIM Engine"
+  4. Landing page shows MIII-AIM architecture footnote; Button component has gold variant
+  5. Infrastructure fixes applied: Docker healthchecks, Vercel config, Google Cloud root route
+  6. requireToolUse conditional on tools.length > 0; Swagger type fix applied
+  7. Gemini provider defaults to gemini-2.5-flash model and gemini-embedding-2 URL
+**Plans**: 3 plans in 1 wave
+
+Plans:
+- [ ] 12-01-PLAN.md — MIII-AIM Brand Foundation (design tokens, mythic presets, Gemini defaults)
+- [ ] 12-02-PLAN.md — MIII-AIM UI Elements (header, footer, footnote, button)
+- [ ] 12-03-PLAN.md — Infrastructure Hardening (Docker, Vercel, GCP, code quality)
+
+**Wave dependency notes:**
+- **Wave 1** — 12-01, 12-02, 12-03 (no dependencies — all touch different files)
+
 ---
 
 ## Progress
@@ -261,6 +284,7 @@ Plans:
 | 9. Web UI Extensions | 7/7 | Complete | 2026-06-06 |
 | 10. End-to-End Integration & Testing | 5/5 | Complete | 2026-06-06 |
 | 11. Performance Hardening & Documentation | 5/5 | Complete | 2026-06-06 |
+| 12. MIII-AIM Brand Melody Injection | 0/3 | Planning | 2026-06-08 |
 
 ---
 
