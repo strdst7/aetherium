@@ -31,6 +31,10 @@ export function Layout({ children, selectedIdentity = '', onIdentityChange }: La
           <span style={{ fontSize: '1.5em', fontWeight: 700, color: '#2c3e50' }}>
             ⚡ Aetherium
           </span>
+          <span style={{ color: '#D9C27A', fontSize: '1.2em', fontWeight: 300 }}>×</span>
+          <span style={{ fontSize: '1em', fontWeight: 500, color: '#6b7280', letterSpacing: '0.02em' }}>
+            MIII-AIM
+          </span>
         </div>
 
         {/* Navigation */}
@@ -63,6 +67,20 @@ export function Layout({ children, selectedIdentity = '', onIdentityChange }: La
       >
         {children}
       </main>
+
+      {/* Footer */}
+      <footer
+        style={{
+          borderTop: '1px solid #e5e7eb',
+          padding: '12px 24px',
+          textAlign: 'center',
+          fontSize: '0.8em',
+          color: '#9ca3af',
+        }}
+      >
+        <span style={{ color: '#D9C27A' }}>⊹</span>{' '}
+        Powered by MIII-AIM Engine
+      </footer>
     </div>
   );
 }

@@ -122,6 +122,9 @@ export class MythicModule {
       } else if (schema.tone.register === "somber") {
         output = this.makeSomber(output);
         transformations.push("somber-ized");
+      } else if (schema.tone.register === "sovereign") {
+        output = this.makeSovereign(output);
+        transformations.push("sovereign-stamped");
       }
     }
 
@@ -132,6 +135,9 @@ export class MythicModule {
     } else if (schema.voice.character === "authoritative") {
       output = this.makeAuthoritative(output);
       transformations.push("authoritative-ized");
+    } else if (schema.voice.character === "architectural") {
+      output = this.makeArchitectural(output);
+      transformations.push("architectural-structured");
     }
 
     // Apply symbolic anchors
@@ -203,6 +209,13 @@ export class MythicModule {
       modifiers.push("gentle");
     }
 
+    // Sovereign tone detection
+    if (rules.some(r => r.toLowerCase().includes("sovereign") || r.toLowerCase().includes("architectural"))) {
+      if (register === "neutral") register = "sovereign";
+      intensity = 0.8;
+      modifiers.push("architectural", "ritualistic");
+    }
+
     return { register, intensity, modifiers };
   }
 
@@ -230,6 +243,13 @@ export class MythicModule {
       character = "poetic";
       vocabulary = "rich";
       sentenceStructure = "flowing";
+    }
+
+    if (rules.some(r => r.toLowerCase().includes("architectural") || r.toLowerCase().includes("sovereign"))) {
+      character = "architectural";
+      vocabulary = "precise";
+      sentenceStructure = "structured";
+      pacing = "deliberate";
     }
 
     return { character, vocabulary, sentenceStructure, pacing };
@@ -326,6 +346,31 @@ export class MythicModule {
         };
         return authoritative[match.toLowerCase()] || match;
       });
+  }
+
+  private makeSovereign(text: string): string {
+    return text
+      .replace(/\b(i think|i believe|i feel|maybe|perhaps|probably)\b/gi, "It is determined that")
+      .replace(/\b(help|assist|aid)\b/gi, "empower")
+      .replace(/\b(problem|issue)\b/gi, "challenge")
+      .replace(/\b(use|using)\b/gi, "invoke")
+      .replace(/\b(make|create|build)\b/gi, "forge")
+      + "\n\n[⊹ Stamped by Sovereign Accord — sigil bound]";
+  }
+
+  private makeArchitectural(text: string): string {
+    return text
+      .replace(/\b(and)\b/gi, "&")
+      .replace(/\b(first|second|third)\b/gi, (match: string) => {
+        const ordinals: Record<string, string> = {
+          "first": "I.", "second": "II.", "third": "III.",
+        };
+        return ordinals[match.toLowerCase()] || match;
+      })
+      .replace(/\b(because)\b/gi, "per")
+      .replace(/\b(example)\b/gi, "exemplar")
+      .replace(/\b(part)\b/gi, "module")
+      .replace(/\b(group)\b/gi, "cluster");
   }
 
   private injectSymbolicReferences(text: string, anchors: SymbolicAnchor[]): string {

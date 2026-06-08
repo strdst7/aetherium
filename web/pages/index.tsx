@@ -280,6 +280,14 @@ export default function Home() {
           </section>
         )}
       </main>
+
+      {/* Architecture footnote */}
+      <div style={styles.footnote}>
+        <span style={{ color: '#D9C27A' }}>⊹</span>{' '}
+        Architecture: MIII-AIM Sovereign Engine v1.0
+        <span style={{ color: '#D9C27A', margin: '0 8px' }}>·</span>
+        Identity-routed via Aetherium Crystal Core
+      </div>
     </div>
   );
 }
@@ -445,5 +453,14 @@ const styles: Record<string, React.CSSProperties> = {
     textAlign: 'center',
     color: '#7f8c8d',
     fontSize: '0.95em',
+  },
+  footnote: {
+    marginTop: '40px',
+    paddingTop: '16px',
+    borderTop: '1px solid #e5e7eb',
+    textAlign: 'center',
+    color: '#9ca3af',
+    fontSize: '0.8em',
+    letterSpacing: '0.02em',
   },
 };

@@ -18,7 +18,7 @@ export class GeminiProvider implements AIProvider {
 
   constructor(
     apiKey: string = process.env.GEMINI_API_KEY || "",
-    model: string = process.env.GEMINI_MODEL || "gemini-1.5-pro"
+    model: string = process.env.GEMINI_MODEL || "gemini-2.5-flash"
   ) {
     this.apiKey = apiKey;
     this.model = model;
@@ -167,7 +167,7 @@ export class GeminiProvider implements AIProvider {
       const embeddings = await Promise.all(
         inputs.map(async (text) => {
           const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-2:embedContent`,
             {
               method: "POST",
               headers: {

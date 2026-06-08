@@ -18,40 +18,53 @@ services:
           memory: "256M"
 
   mongo:
-    image: mongo:6.0
+    image: mongo:7
     ports:
       - "27017:27017"
     volumes:
       - mongo-data:/data/db
     restart: unless-stopped
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: "512M"
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
     deploy:
       resources:
         limits:
           cpus: "0.5"
           memory: "256M"
 
-  redis:
-    image: redis:7
-    ports:
-      - "6379:6379"
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          cpus: "0.5"
-          memory: "128M"
-
   api:
     build:
       context: ..
       dockerfile: api/Dockerfile
-    env_file: .env.local
+    env_file: ../.env.local
     ports:
       - "8080:8080"
     depends_on:
-      - mongo
-      - minio
-      - redis
+      mongo:
+        condition: service_healthy
+      minio:
+        condition: service_started
+      redis:
+        condition: service_healthy
     restart: unless-stopped
     deploy:
       resources:
@@ -63,7 +76,7 @@ services:
     build:
       context: ..
       dockerfile: web/Dockerfile
-    env_file: .env.local
+    env_file: ../.env.local
     ports:
       - "3000:3000"
     depends_on:

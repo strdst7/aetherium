@@ -42,6 +42,25 @@ infra/            # Docker Compose
 3. **Web dev:** `cd web && npm run dev` (Next.js on port 3000)
 4. **Tests:** `npm test` in either `api/` or `web/`
 
+## Deployment
+
+### Docker (Local)
+- Compose file in `infra/docker-compose.yml` — run from project root: `docker compose -f infra/docker-compose.yml up`
+- `env_file: ../.env.local` resolves to root `.env.local`
+- MongoDB 7 + Redis 7-alpine with health checks; services wait for healthy deps
+- API on `:8080`, Web on `:3000`, MinIO on `:9000` / `:9001`
+
+### Vercel (Web Frontend)
+- Deploy `web/` directory as Next.js app (Root Directory: `web`)
+- `vercel.json` at project root sets `rootDirectory: "web"` and `framework: "nextjs"`
+- Set `NEXT_PUBLIC_API_URL` env var in Vercel dashboard to deployed API URL
+
+### Google Cloud Run (API Backend)
+- Deploy `api/` container to Cloud Run
+- Visit the root URL in browser — serves a landing page (`GET /`)
+- Health check: `GET /health`
+- Frontend (Next.js) deploys separately to Vercel
+
 ## Architecture Mapping
 
 | Existing Component | Aetherium Role | Status |
@@ -59,13 +78,14 @@ This project uses the Get Shit Done (GSD) workflow:
 
 - **Mode:** yolo (auto-approve plans, execute directly)
 - **Granularity:** fine (11 phases)
-- **Current phase:** 0 (ready to plan Phase 1)
+- **Current phase:** 12 (ready to plan Phase 1-11 execution, Phase 12 complete)
 - **Planning docs:** `.planning/` directory
 
 ### Key Commands
 
 - `/gsd-discuss-phase N` — Gather context before planning Phase N
 - `/gsd-plan-phase N` — Create executable plan for Phase N
+- `/gsd-execute-phase N` — Execute Phase N plans
 - `/gsd-execute-phase N` — Execute Phase N plans
 - `/gsd-verify-work` — Verify deliverables against requirements
 
@@ -82,6 +102,7 @@ This project uses the Get Shit Done (GSD) workflow:
 9. Web UI Extensions
 10. End-to-End Integration & Testing
 11. Performance Hardening & Documentation
+12. MIII-AIM Brand Melody Injection (design tokens, header, mythic presets)
 
 ## Critical Constraints
 
