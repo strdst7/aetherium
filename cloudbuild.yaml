@@ -1,0 +1,14 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      [
+        'build',
+        '-f',
+        'api/Dockerfile',
+        '-t',
+        'gcr.io/$PROJECT_ID/aetherium-api',
+        '.'
+      ]
+
+images:
+  - 'gcr.io/$PROJECT_ID/aetherium-api'
