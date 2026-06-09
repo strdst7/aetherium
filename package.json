@@ -1,19 +1,12 @@
 {
-  "name": "@aetherium/root",
-  "version": "1.0.0",
-  "private": true,
-  "description": "Aetherium — Sovereign, identity-first AI intelligence platform",
+  "name": "aetherium-nexus",
+  "workspaces": ["frontend", "backend"], 
   "scripts": {
-    "test:api": "cd api && npm test",
-    "test:web": "cd web && npm test",
-    "test:all": "npm run test:api && npm run test:web",
-    "test:e2e": "cd api && npx jest --detectOpenHandles --forceExit --testPathPatterns='e2e.test.ts' --testPathIgnorePatterns='/node_modules/' --passWithNoTests"
+    "dev-frontend": "npm run dev --prefix frontend",
+    "dev-backend": "npm run dev --prefix backend",
+    "dev": "concurrently \"npm run dev-frontend\" \"npm run dev-backend\""
   },
-  "workspaces": [
-    "api",
-    "web"
-  ],
-  "dependencies": {
-    "@google/genai": "^2.8.0"
+  "devDependencies": {
+    "concurrently": "latest"
   }
 }
