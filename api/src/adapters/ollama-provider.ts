@@ -16,6 +16,7 @@ export class OllamaProvider implements AIProvider {
   };
 
   private baseUrl: string;
+  private defaultModel: string;
   private forceFail = false;
 
   setForceFail(v: boolean): void {
@@ -24,6 +25,7 @@ export class OllamaProvider implements AIProvider {
 
   constructor(baseUrl: string = process.env.OLLAMA_URL || "http://localhost:11434") {
     this.baseUrl = baseUrl;
+    this.defaultModel = process.env.OLLAMA_MODEL || "llama3";
   }
 
   async generate(req: GenerateRequest): Promise<GenerateResponse> {
@@ -31,7 +33,8 @@ export class OllamaProvider implements AIProvider {
       throw new Error("Simulated Ollama provider failure");
     }
 
-    const { model, prompt, messages, maxTokens = 512, temperature = 0.7 } = req;
+    const { prompt, messages, maxTokens = 512, temperature = 0.7 } = req;
+    const model = this.defaultModel;
 
     let text = prompt || "";
     if (messages && messages.length > 0) {

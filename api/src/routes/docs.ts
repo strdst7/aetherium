@@ -22,7 +22,9 @@ export function createDocsRouter(): Router {
       const swaggerUi = await import("swagger-ui-express");
       const swaggerDocument = require("../../openapi.yml");
       
-      swaggerUi.setup(swaggerDocument)(req, res, () => {});
+     const handler = swaggerUi.setup(swaggerDocument) as any;
+handler(req, res, () => {});
+
     } catch (error) {
       // Fallback: Serve a simple HTML page with links
       res.send(`

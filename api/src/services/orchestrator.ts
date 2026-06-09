@@ -187,7 +187,10 @@ User: ${queryText}
     }
 
     // Step 1: compute embedding
-    const provider = await this.providerRegistry.pick({ ...policy, requireEmbeddings: true, requireToolUse: true });
+    const provider = await this.providerRegistry.pick({
+      ...policy,
+      requireEmbeddings: true
+    });
     let embedding: number[] = [0];
     if (provider.embed) {
       const embedResult = await provider.embed(queryText);
@@ -318,7 +321,7 @@ User: ${queryText}
       identity = await this.identityBinding.resolve(identity_anchor);
     }
 
-    const provider = await this.providerRegistry.pick({ requireToolUse: true });
+    const provider = await this.providerRegistry.pick();
     if (!provider.generateWithTools) {
       throw new Error('Provider does not support tool use');
     }
