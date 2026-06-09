@@ -1,6 +1,7 @@
 import React from 'react';
-import { Activity, Cpu, MessageSquare, Settings, Hexagon } from 'lucide-react';
+import { Terminal, Cpu, Database, Settings, Hexagon, ShieldAlert, Lock } from 'lucide-react';
 import { TabType } from '../types';
+import { API_BASE_URL } from '../constants';
 
 interface SidebarProps {
   activeTab: TabType;
@@ -9,21 +10,32 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
   const navItems: { id: TabType; label: string; icon: React.ReactNode }[] = [
-    { id: 'dashboard', label: 'Nexus Core', icon: <Activity size={20} /> },
-    { id: 'nodes', label: 'Node Matrix', icon: <Cpu size={20} /> },
-    { id: 'oracle', label: 'AI Oracle', icon: <MessageSquare size={20} /> },
+    { id: 'shell', label: 'Web Shell', icon: <Terminal size={20} /> },
+    { id: 'agents', label: 'Agents UI', icon: <Cpu size={20} /> },
+    { id: 'memory', label: 'Memory Viz', icon: <Database size={20} /> },
+    { id: 'governance', label: 'Governance', icon: <ShieldAlert size={20} /> },
   ];
 
   return (
-    <div className="w-64 h-full bg-aether-800/80 backdrop-blur-md border-r border-aether-cyan/20 flex flex-col">
-      <div className="p-6 flex items-center gap-3 border-b border-aether-cyan/20">
+    <div className="w-64 h-full bg-aether-800/80 backdrop-blur-md border-r border-aether-orange/20 flex flex-col">
+      <div className="p-6 flex items-center gap-3 border-b border-aether-orange/20">
         <div className="relative">
-          <Hexagon className="text-aether-cyan animate-pulse-slow" size={32} />
-          <div className="absolute inset-0 bg-aether-cyan/20 blur-md rounded-full"></div>
+          <Hexagon className="text-aether-orange animate-pulse-slow" size={32} />
+          <div className="absolute inset-0 bg-aether-orange/20 blur-md rounded-full"></div>
         </div>
-        <h1 className="text-xl font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-aether-cyan to-aether-purple">
-          AETHERIUM
+        <h1 className="text-xl font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-aether-orange to-aether-magenta">
+          NEXUS
         </h1>
+      </div>
+
+      <div className="px-6 py-4 border-b border-aether-orange/10 bg-black/20">
+        <div className="flex items-center gap-2 text-xs font-mono text-slate-400 mb-1">
+          <Lock size={12} className="text-green-400" />
+          <span>Auth: Admin (Token Valid)</span>
+        </div>
+        <div className="text-[10px] font-mono text-slate-500 truncate" title={API_BASE_URL}>
+          API: {API_BASE_URL}
+        </div>
       </div>
 
       <nav className="flex-1 py-6 px-4 space-y-2">
@@ -33,7 +45,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
             onClick={() => setActiveTab(item.id)}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${
               activeTab === item.id
-                ? 'bg-aether-cyan/10 text-aether-cyan border border-aether-cyan/30 shadow-[0_0_10px_rgba(0,240,255,0.2)]'
+                ? 'bg-aether-orange/10 text-aether-orange border border-aether-orange/30 shadow-[0_0_10px_rgba(255,122,0,0.2)]'
                 : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
             }`}
           >
@@ -43,7 +55,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
         ))}
       </nav>
 
-      <div className="p-4 border-t border-aether-cyan/20">
+      <div className="p-4 border-t border-aether-orange/20">
         <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-white/5 hover:text-slate-200 transition-colors">
           <Settings size={20} />
           <span className="font-medium tracking-wide">System Config</span>
