@@ -1,5 +1,5 @@
 {
-  "name": "aetherium-nexus",
+  "name": "miii-aim-aetherium-architecture",
   "workspaces": ["frontend", "backend"], 
   "scripts": {
     "dev-frontend": "npm run dev --prefix frontend",
