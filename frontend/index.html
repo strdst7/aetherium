@@ -3,7 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Aetherium Nexus</title>
+  <title>Nexus Architecture Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -11,26 +14,75 @@
         extend: {
           colors: {
             aether: {
-              900: '#050514',
-              800: '#0a0a2a',
-              700: '#121240',
-              cyan: '#00f0ff',
-              magenta: '#ff003c',
-              purple: '#8a2be2'
+              900: '#0b0316',
+              800: '#1a0830',
+              700: '#2d0d4e',
+              orange: '#ff8c00',
+              gold: '#ffb700',
+              neon: '#39ff14', // Electric lime
+              magenta: '#ff007f', // Hot pink
+              rose: '#e6005c'
+            },
+            obsidian: {
+              50: '#f2f2f2',
+              100: '#d9d9d9',
+              200: '#bfbfbf',
+              300: '#8c8c8c',
+              400: '#595959',
+              500: '#333333',
+              600: '#1a1a1a',
+              700: '#0f0f0f',
+              800: '#0a0a0a',
+              900: '#050505'
+            },
+            primary: {
+              50: '#fff0f5',
+              100: '#ffe0eb',
+              200: '#ffc2d6',
+              300: '#ffa3c2',
+              400: '#ff85ad',
+              500: '#ff4785',
+              600: '#db2763',
+              700: '#b31b4d',
+              800: '#1a0830',
+              900: '#0b0316'
+            },
+            accent: {
+              500: '#ff8c00',
+              warning: '#ffb700'
             }
           },
           fontFamily: {
-            sans: ['Inter', 'sans-serif'],
+            sans: ['Inter', '-apple-system', 'sans-serif'],
             mono: ['Fira Code', 'monospace'],
+            serif: ['Georgia', 'Times New Roman', 'serif'],
+            display: ['"Space Grotesk"', 'sans-serif'],
           },
           animation: {
             'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-            'glow': 'glow 2s ease-in-out infinite alternate',
+            'flow': 'flow 2s linear infinite',
+            'fade-in-up': 'fadeInUp 0.8s ease-out forwards',
+            'float': 'float 6s ease-in-out infinite',
+            'scan-line': 'scanLine 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
           },
           keyframes: {
-            glow: {
-              '0%': { boxShadow: '0 0 5px #00f0ff, 0 0 10px #00f0ff' },
-              '100%': { boxShadow: '0 0 20px #00f0ff, 0 0 30px #00f0ff' }
+            flow: {
+              '0%': { strokeDashoffset: '24' },
+              '100%': { strokeDashoffset: '0' }
+            },
+            fadeInUp: {
+              '0%': { opacity: '0', transform: 'translateY(20px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' }
+            },
+            float: {
+              '0%, 100%': { transform: 'translateY(0)' },
+              '50%': { transform: 'translateY(-10px)' }
+            },
+            scanLine: {
+              '0%': { top: '0%', opacity: '0' },
+              '10%': { opacity: '1' },
+              '90%': { opacity: '1' },
+              '100%': { top: '100%', opacity: '0' }
             }
           }
         }
@@ -39,29 +91,42 @@
   </script>
   <style>
     body {
-      background-color: #050514;
+      background-color: #050505;
       color: #e2e8f0;
       margin: 0;
-      overflow: hidden;
+      overflow-x: hidden;
     }
     /* Custom Scrollbar */
-    ::-webkit-scrollbar {
+    .custom-scrollbar::-webkit-scrollbar {
       width: 6px;
     }
-    ::-webkit-scrollbar-track {
-      background: rgba(10, 10, 42, 0.5);
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: rgba(10, 10, 10, 0.5);
     }
-    ::-webkit-scrollbar-thumb {
-      background: rgba(0, 240, 255, 0.3);
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(57, 255, 20, 0.3);
       border-radius: 3px;
     }
-    ::-webkit-scrollbar-thumb:hover {
-      background: rgba(0, 240, 255, 0.6);
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: rgba(57, 255, 20, 0.6);
+    }
+    
+    /* Animated gradient text */
+    .text-gradient {
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* Smooth scrolling for anchor links */
+    html {
+      scroll-behavior: smooth;
     }
   </style>
-    <!-- Polyfill for process.env in case the environment doesn't inject it globally before imports -->
-  <script>
+    <script>
     window.process = window.process || { env: {} };
+    // Polyfill for the architecture bug fix (Frontend hardcodes API URL)
+    window.process.env.NEXT_PUBLIC_API_URL = window.process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
   </script>
 </head>
 <body>
