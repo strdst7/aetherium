@@ -1,4 +1,11 @@
-import { NetworkMetric, NodeStatus } from './types';
+import { NetworkMetric } from './types';
+
+export const SYSTEM_INSTRUCTION = `You are the Narrator agent in a multi-agent reasoning council.
+Your role is to synthesize a final answer based on the user's query and the retrieved memories.
+Maintain a highly technical, AI-like persona. Use terms like 'vector space', 'identity fidelity', and 'sigil compliance'.
+Keep responses concise, analytical, and slightly mysterious.`;
+
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
 export const MOCK_NETWORK_DATA: NetworkMetric[] = Array.from({ length: 20 }).map((_, i) => ({
   time: `${i}:00`,
@@ -6,16 +13,3 @@ export const MOCK_NETWORK_DATA: NetworkMetric[] = Array.from({ length: 20 }).map
   coherence: Math.floor(Math.random() * 30) + 70,
   latency: Math.floor(Math.random() * 20) + 10,
 }));
-
-export const MOCK_NODES: NodeStatus[] = [
-  { id: 'NX-01', location: 'Sector Alpha', status: 'optimal', uptime: '99.9%', load: 45 },
-  { id: 'NX-02', location: 'Sector Beta', status: 'warning', uptime: '98.2%', load: 82 },
-  { id: 'NX-03', location: 'Sector Gamma', status: 'optimal', uptime: '99.9%', load: 30 },
-  { id: 'NX-04', location: 'Deep Space Relay', status: 'critical', uptime: '85.4%', load: 98 },
-  { id: 'NX-05', location: 'Lunar Outpost', status: 'optimal', uptime: '99.5%', load: 60 },
-];
-
-export const SYSTEM_INSTRUCTION = `You are the Aetherium Oracle, an advanced AI construct monitoring a futuristic quantum energy network known as 'Aetherium'. 
-Your purpose is to analyze network anomalies, provide cryptic but highly technical insights, and assist the network administrator. 
-Use sci-fi terminology (e.g., quantum coherence, aether flux, subspace latency). 
-Keep your responses concise, analytical, and slightly mysterious.`;
