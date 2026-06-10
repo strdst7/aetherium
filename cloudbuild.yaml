@@ -6,9 +6,9 @@ steps:
         '-f',
         'api/Dockerfile',
         '-t',
-        'asia-southeast1-docker.pkg.dev/$PROJECT_ID/aetherium-repo/aetherium-api',
+        'us-central1-docker.pkg.dev/$PROJECT_ID/aetherium-repo/aetherium-api',
         '.'
       ]
 
 images:
-  - 'asia-southeast1-docker.pkg.dev/$PROJECT_ID/aetherium-repo/aetherium-api'
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/aetherium-repo/aetherium-api'
