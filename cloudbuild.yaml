@@ -1,14 +1,12 @@
 steps:
-  - name: 'gcr.io/cloud-builders/docker'
-    args:
-      [
-        'build',
-        '-f',
-        'api/Dockerfile',
-        '-t',
-        'us-central1-docker.pkg.dev/$PROJECT_ID/aetherium-repo/aetherium-api',
-        '.'
-      ]
+- name: gcr.io/cloud-builders/docker
+  args:
+    - build
+    - -f
+    - api/Dockerfile
+    - -t
+    - us-central1-docker.pkg.dev/$PROJECT_ID/aetherium-repo/aetherium-api
+    - .
 
 images:
-  - 'us-central1-docker.pkg.dev/$PROJECT_ID/aetherium-repo/aetherium-api'
+- us-central1-docker.pkg.dev/$PROJECT_ID/aetherium-repo/aetherium-api
