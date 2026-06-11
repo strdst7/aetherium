@@ -314,7 +314,7 @@ progress:
 
 | Field | Value |
 |-------|-------|
-| Last command | Phase 12 complete — UAT verified. milestone v1.0 done. |
+| Last command | Phase 12 shipped — PR #4 |
 | Context window health | Healthy |
 | Files changed this session | `.planning/phases/12-miii-aim-brand-melody/*`, `.planning/ROADMAP.md`, `.planning/STATE.md`, `design/sigil/v1.json`, `api/src/services/mythic-module.ts`, `api/src/adapters/gemini-provider.ts`, `web/components/Layout.tsx`, `web/components/Button.tsx`, `web/pages/index.tsx`, `web/src/index.test.tsx`, `infra/docker-compose.yml`, `vercel.json`, `api/src/index.ts`, `api/src/routes/docs.ts`, `api/src/services/orchestrator.ts`, `api/src/services/agent-builder.ts` |
 
