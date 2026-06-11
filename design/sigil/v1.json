@@ -71,6 +71,54 @@
       "800": "#1f2937",
       "900": "#111827"
     },
+    "secondary": {
+      "50": "#faf6ee",
+      "100": "#f0e8d0",
+      "200": "#e4d4a4",
+      "300": "#d9c27a",
+      "400": "#d0b45a",
+      "500": "#c4a33e",
+      "600": "#a8862e",
+      "700": "#8a6d24",
+      "800": "#6c551c",
+      "900": "#4e3d14"
+    },
+    "obsidian": {
+      "50": "#f2f2f2",
+      "100": "#d9d9d9",
+      "200": "#bfbfbf",
+      "300": "#8c8c8c",
+      "400": "#595959",
+      "500": "#333333",
+      "600": "#1a1a1a",
+      "700": "#0f0f0f",
+      "800": "#0a0a0a",
+      "900": "#050505"
+    },
+    "silver": {
+      "50": "#f8f9fa",
+      "100": "#eef0f2",
+      "200": "#dee1e5",
+      "300": "#c9d1d9",
+      "400": "#b0bac5",
+      "500": "#97a3b1",
+      "600": "#7e8c9d",
+      "700": "#657589",
+      "800": "#4c5e75",
+      "900": "#3a4761"
+    },
+    "violet": {
+      "50": "#f3f0fa",
+      "100": "#e0d8f0",
+      "200": "#c2b1e0",
+      "300": "#a48ad0",
+      "400": "#6f4fa8",
+      "500": "#543a8a",
+      "600": "#3a1f5d",
+      "700": "#2e184a",
+      "800": "#221237",
+      "900": "#160c25"
+    },
     "semantic": {
       "success": "#27ae60",
       "warning": "#f39c12",
@@ -166,6 +214,16 @@
         "rule": "animation_boundaries",
         "description": "Motion must use only predefined duration and easing functions",
         "weight": 0.5
+      },
+      {
+        "rule": "sovereign_geometry",
+        "description": "MIII-AIM sovereign geometry: golden ratio (1.618:1) preferred for all identity artifacts; obsidian background with gold accent ratio of 8:1",
+        "weight": 0.9
+      },
+      {
+        "rule": "vault_proportion",
+        "description": "Identity sigils must respect vault proportions (violet-to-gold ratio 3:1) and maintain obsidian base layer",
+        "weight": 0.7
       }
     ]
   }

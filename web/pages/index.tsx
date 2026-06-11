@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { ReasoningResponse } from '../src/types/api';
 import { IdentitySelector } from '../components/IdentitySelector';
+import { Layout } from '../components/Layout';
 import { ReasoningTrace } from '../components/ReasoningTrace';
 import { ValidationReport } from '../components/ValidationReport';
 import { submitReasonRequest, getIdentities } from '../src/lib/api-client';
@@ -84,7 +85,7 @@ export default function Home() {
   };
 
   return (
-    <div style={styles.container}>
+    <Layout selectedIdentity={identityAnchor} onIdentityChange={setIdentityAnchor}>
       <header style={styles.header}>
         <h1 style={styles.title}>⚡ Aetherium Identity Test</h1>
         <p style={styles.subtitle}>Select an identity, submit a prompt, and inspect the reasoning trace and validation report.</p>
@@ -280,19 +281,19 @@ export default function Home() {
           </section>
         )}
       </main>
-    </div>
+
+      {/* Architecture footnote */}
+      <div style={styles.footnote}>
+        <span style={{ color: '#D9C27A' }}>⊹</span>{' '}
+        Architecture: MIII-AIM Sovereign Engine v1.0
+        <span style={{ color: '#D9C27A', margin: '0 8px' }}>·</span>
+        Identity-routed via Aetherium Crystal Core
+      </div>
+    </Layout>
   );
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  container: {
-    fontFamily: 'system-ui, -apple-system, sans-serif',
-    maxWidth: '1200px',
-    margin: '0 auto',
-    padding: '20px',
-    backgroundColor: '#f8f9fa',
-    minHeight: '100vh',
-  },
   header: {
     textAlign: 'center',
     marginBottom: '40px',
@@ -445,5 +446,14 @@ const styles: Record<string, React.CSSProperties> = {
     textAlign: 'center',
     color: '#7f8c8d',
     fontSize: '0.95em',
+  },
+  footnote: {
+    marginTop: '40px',
+    paddingTop: '16px',
+    borderTop: '1px solid #e5e7eb',
+    textAlign: 'center',
+    color: '#9ca3af',
+    fontSize: '0.8em',
+    letterSpacing: '0.02em',
   },
 };

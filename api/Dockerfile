@@ -2,19 +2,18 @@ FROM node:20-slim
 
 WORKDIR /app
 
-# Copy only package files first for caching
+# Copy package files for npm workspaces (root + both workspaces)
+COPY package.json package-lock.json* ./
 COPY api/package*.json ./api/
+COPY web/package*.json ./web/
 
-# Install dependencies
-RUN cd api && npm install
+# Install all workspace dependencies
+RUN npm install
 
-# Copy everything from the root context
+# Copy everything and build
 COPY . .
-
-# Build the API
 RUN cd api && npm run build
 
 EXPOSE 8080
 
-# Start from the api directory
 CMD ["npm", "start", "--prefix", "api"]

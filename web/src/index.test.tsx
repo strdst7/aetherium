@@ -52,7 +52,7 @@ describe('Home Page', () => {
     render(<Home />);
 
     await waitFor(() => {
-      expect(screen.getByText('Test Identity (v1)')).toBeInTheDocument();
+      expect(screen.getAllByText('Test Identity (v1)').length).toBe(2);
     });
 
     const textarea = screen.getByPlaceholderText(/Enter your reasoning query.../i);
@@ -92,7 +92,7 @@ describe('Home Page', () => {
     render(<Home />);
 
     await waitFor(() => {
-      expect(screen.getByText('Test Identity (v1)')).toBeInTheDocument();
+      expect(screen.getAllByText('Test Identity (v1)').length).toBe(2);
     });
 
     const textarea = screen.getByPlaceholderText(/Enter your reasoning query.../i);

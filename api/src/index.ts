@@ -45,6 +45,42 @@ app.use((req, res, next) => {
   }
 });
 
+// Root route — serves a landing page when API URL is visited in browser
+app.get("/", (req, res) => {
+  res.send(`<!DOCTYPE html>
+<html>
+<head>
+  <title>Aetherium API</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 720px; margin: 60px auto; padding: 0 24px; line-height: 1.6; color: #2c3e50; background: #f8f9fa; }
+    h1 { font-size: 2em; margin-bottom: 0; }
+    .gold { color: #D9C27A; }
+    .subtitle { color: #6b7280; margin-top: 4px; }
+    .endpoints { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin: 24px 0; }
+    code { background: #ecf0f1; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; }
+    a { color: #3498db; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .footer { margin-top: 40px; font-size: 0.85em; color: #9ca3af; text-align: center; }
+  </style>
+</head>
+<body>
+  <h1>⚡ Aetherium <span class="gold">×</span> <span style="color:#6b7280">MIII-AIM</span></h1>
+  <p class="subtitle">Sovereign, identity-first AI intelligence platform — API server</p>
+  <div class="endpoints">
+    <p><strong>Available Endpoints:</strong></p>
+    <p><a href="/health"><code>GET /health</code></a> — Health check</p>
+    <p><a href="/v1/info"><code>GET /v1/info</code></a> — API information</p>
+    <p><a href="/docs"><code>GET /docs</code></a> — API documentation</p>
+    <p><code>POST /v1/reason</code> — Natural language reasoning</p>
+    <p><code>POST /v1/memory/search</code> — Memory vector search</p>
+    <p><code>POST /identity/register</code> — Register an identity</p>
+  </div>
+  <div class="footer">⊹ Powered by MIII-AIM Engine</div>
+</body>
+</html>`);
+});
+
 // Version negotiation middleware
 app.use(versionNegotiation);
 app.use(addVersionToResponse);

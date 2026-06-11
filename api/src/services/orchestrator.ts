@@ -12,7 +12,7 @@ import { AuditService } from './audit-service';
 import { AuditRecordCreate, AuditProvenance } from '../types/audit';
 import { CURRENT_API_VERSION } from '../types/api-contracts';
 
-const DEFAULT_MODEL = 'gemini-1.5-pro';
+const DEFAULT_MODEL = 'llama3:latest';
 
 export interface OrchestratorContext {
   identity_anchor: string;
@@ -187,7 +187,7 @@ User: ${queryText}
     }
 
     // Step 1: compute embedding
-    const provider = await this.providerRegistry.pick({ ...policy, requireEmbeddings: true, requireToolUse: true });
+    const provider = await this.providerRegistry.pick({ ...policy, requireEmbeddings: true, requireToolUse: tools.length > 0 });
     let embedding: number[] = [0];
     if (provider.embed) {
       const embedResult = await provider.embed(queryText);
@@ -318,8 +318,8 @@ User: ${queryText}
       identity = await this.identityBinding.resolve(identity_anchor);
     }
 
-    const provider = await this.providerRegistry.pick({ requireToolUse: true });
-    if (!provider.generateWithTools) {
+    const provider = await this.providerRegistry.pick({ requireToolUse: tools.length > 0 });
+    if (tools.length > 0 && !provider.generateWithTools) {
       throw new Error('Provider does not support tool use');
     }
 
@@ -363,12 +363,19 @@ Respond with a JSON object in this exact format:
 
 Provide ONLY the JSON object, no markdown formatting, no additional text.`;
 
-    const candidate = await provider.generateWithTools({
-      model: DEFAULT_MODEL,
-      prompt: planPrompt,
-      maxTokens: req.maxTokens || 1024,
-      temperature: req.temperature || 0.2
-    }, []);
+    const candidate = tools.length > 0 && provider.generateWithTools
+      ? await provider.generateWithTools({
+          model: DEFAULT_MODEL,
+          prompt: planPrompt,
+          maxTokens: req.maxTokens || 1024,
+          temperature: req.temperature || 0.2
+        }, tools)
+      : await provider.generate({
+          model: DEFAULT_MODEL,
+          prompt: planPrompt,
+          maxTokens: req.maxTokens || 1024,
+          temperature: req.temperature || 0.2
+        });
 
     const responseText = candidate.text || '';
     let plan: TaskPlan;

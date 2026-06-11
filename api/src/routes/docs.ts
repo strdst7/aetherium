@@ -16,13 +16,14 @@ export function createDocsRouter(): Router {
   });
 
   // Serve interactive Swagger UI (if swagger-ui-express is available)
-  router.get("/docs", async (req, res) => {
+  router.get("/docs", async (req, res, next) => {
     try {
       // Dynamically import swagger-ui-express to avoid hard dependency
       const swaggerUi = await import("swagger-ui-express");
       const swaggerDocument = require("../../openapi.yml");
       
-      swaggerUi.setup(swaggerDocument)(req, res, () => {});
+      const setupHandler = swaggerUi.setup(swaggerDocument);
+      setupHandler(req, res, next);
     } catch (error) {
       // Fallback: Serve a simple HTML page with links
       res.send(`

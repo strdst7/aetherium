@@ -115,7 +115,7 @@ export class AgentBuilder {
         messages: req.messages,
         maxTokens: req.options?.maxTokens,
         temperature: req.options?.temperature,
-        policy: { ...req.options?.policy, requireToolUse: true },
+        policy: { ...req.options?.policy, requireToolUse: this.tools.length > 0 },
         memoryAlpha: req.options?.memoryAlpha,
         memoryK: req.options?.memoryK,
       };
@@ -217,13 +217,18 @@ export class AgentBuilder {
     const maxIterations = effectiveConfig.maxTaskIterations || 20;
 
     try {
+      // Guard: if no tools available, fall back to standard reasoning
+      if (!effectiveConfig.enableTools || !this.mcpClient.isHealthy() || this.tools.length === 0) {
+        return this.execute(req, config);
+      }
+
       // Step 1: Generate plan
       const orchestratorReq: OrchestratorRequest = {
         identity_anchor: req.identity_anchor,
         messages: req.messages,
         maxTokens: req.options?.maxTokens,
         temperature: req.options?.temperature,
-        policy: { ...req.options?.policy, requireToolUse: true },
+        policy: { ...req.options?.policy, requireToolUse: this.tools.length > 0 },
         memoryAlpha: req.options?.memoryAlpha,
         memoryK: req.options?.memoryK,
       };
