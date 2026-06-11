@@ -12,7 +12,7 @@ import { AuditService } from './audit-service';
 import { AuditRecordCreate, AuditProvenance } from '../types/audit';
 import { CURRENT_API_VERSION } from '../types/api-contracts';
 
-const DEFAULT_MODEL = 'gemini-1.5-pro';
+const DEFAULT_MODEL = 'llama3:latest';
 
 export interface OrchestratorContext {
   identity_anchor: string;
